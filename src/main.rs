@@ -83,7 +83,18 @@ fn main() {
     let mut s3 = Sprite::from_texture(t3.clone());
     s3.set_position(origo.x + poly[1].x - 32.0, origo.y + poly[1].y);
     s3.set_scale(number_scale, number_scale);
-    scene.add_child(s3);
+    s3.set_opacity(0.0);
+    let id3 = scene.add_child(s3);
+
+    let seq3 = Sequence(vec![
+        While(Box::new(WaitForever), vec![
+            Wait(1.0),
+            Action(Ease(EaseFunction::QuadraticIn, Box::new(FadeIn(1.0)))),
+            Wait(1.2),
+            Action(Ease(EaseFunction::QuadraticOut, Box::new(FadeOut(1.0)))),
+        ]),
+    ]);
+    scene.run(id3, &seq3);
 
     let mut s6 = Sprite::from_texture(t6.clone());
     s6.set_position(origo.x + poly[2].x, origo.y + poly[2].y - 38.0);
@@ -98,6 +109,7 @@ fn main() {
     let line_radius = 1.5;
 
     while let Some(event) = window.next() {
+        scene.event(&event);
         window.draw_2d(&event, |ctx, gfx, device| {
             clear([0.05, 0.05, 0.05, 1.0], gfx);
 
