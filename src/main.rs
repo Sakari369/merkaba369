@@ -57,6 +57,32 @@ fn calc_poly_vertex(num_points:u32, angle:f64, radius:f64, vertex_index:u32) -> 
 
 //draw_line_segment(color, line_radius, interpolation, p1, p2, segment_width, origo_trans, gfx);
 /*
+                    // Animate the lines .. so that based on the current cycle index, 
+                    // What we would like to call:
+
+                    // draw_line_part(time, segment_width, Point1, Point2)
+                    // And this would draw a line from .
+                    // x1, y1 -> x2, y2
+                    // In a manner where only part of the line is drawn
+                    // And the starting and ending points are advanced based on the interpolation value
+                    // So .. with an interpolation value of 0.5, we would draw a segment of the line
+                    // at point 
+                    //
+
+                    // Line with width of 10
+                    // pt1 |::::|::::| pt2
+
+                    // How would we calculate the start point, end point for the segmented line width ?
+                    // pt1 |::--|--::| pt2
+                    //        ^___^
+                    //         sw
+
+                    // Would need to calculate angle between two points, A
+                    // Then calculate the normalized center value between pt1, pt2 === nPt
+                    // From interpolation value between 0.0 .. 1.0.
+                    // Then from this center position of the line, extend the line
+                    // in angles +A and -A with segment_width/2.0 amounts.
+
 fn draw_line_segment(color:[f32; 4], width:f64, interpolation:f64, p1:&Point2<f64>, p2:&Point2<f64>,
                      segment_width:f64, translation:Matrix2d, gfx: &mut Graphics) {
             line(color, width, [p1.x, p1.y, p2.x, p2.y], translation, gfx);
@@ -113,7 +139,7 @@ fn main() {
 
     let origo = Point2::new(win_size[0]/2.0, win_size[1]/2.0);
     let color:[f32; 4] = [1.0, 1.0, 1.0, 1.0];
-    let color2:[f32; 4] = [0.0, 1.0, 0.0, 1.0];
+    let color2:[f32; 4] = [1.0, 0.0, 1.0, 1.0];
     let num_points = 3;
     let angle = 60.0;
     let radius = 160.0;
@@ -147,8 +173,8 @@ fn main() {
 
     // The numbers show up exactly at specific times, right ?
     // 0.22, 0.50
-    let number_fade_time = 0.22;
-    let number_show_time = 0.40;
+    let number_fade_time = 0.25;
+    let number_show_time = 0.30;
 
     let show_seq = Sequence(vec![
         Action(Ease(EaseFunction::QuadraticIn, Box::new(FadeIn(number_fade_time)))),
@@ -160,28 +186,60 @@ fn main() {
 
     let mut elapsed_frames = 0;
     let mut number_vis_time = 0.0;
-    let cycle_number_time = 900.0;
+    let number_cycle_time = 900.0;
 
-    let mut cycle_idx = 0;
-    let mut active_sprite_id = ids[cycle_idx];
+    let mut cycle_index = 0;
+    let mut active_sprite_id = ids[cycle_index];
+
+    let cycle_points = [
+        Point2::new(poly[1].x, poly[1].y),
+        Point2::new(poly[2].x, poly[2].y),
+        Point2::new(poly[0].x, poly[0].y),
+    ];
+
+    let mut p1 = cycle_points[0];
+    let mut p2 = cycle_points[1];
+
+    scene.run(active_sprite_id, &show_seq);
 
     while let Some(event) = window.next() {
         elapsed_frames = elapsed_frames + 1;
 
         event.update(|args| {
+            scene.event(&event);
+
             let dt_ms = args.dt * 1000.0;
             number_vis_time = number_vis_time + dt_ms;
 
-            if number_vis_time > cycle_number_time {
+            if number_vis_time > number_cycle_time {
                 if scene.running_for_child(active_sprite_id) < Some(1) {
+                    // Cycle to next number.
+                    cycle_index = cycle_index + 1;
+                    if cycle_index >= ids.len() {
+                        cycle_index = 0;
+                    }
+                    active_sprite_id = ids[cycle_index];
+
                     scene.run(active_sprite_id, &show_seq);
                     number_vis_time = 0.0;
 
-                    cycle_idx = cycle_idx + 1;
-                    if cycle_idx >= ids.len() {
-                        cycle_idx = 0;
-                    }
-                    active_sprite_id = ids[cycle_idx];
+                    // Update points that are used to draw segmented line along.
+                    match cycle_index {
+                        0 => { 
+                            p1 = cycle_points[0];
+                            p2 = cycle_points[1];
+                        },
+                        1 => { 
+                            p1 = cycle_points[1];
+                            p2 = cycle_points[2];
+                        },
+                        2 => { 
+                            p1 = cycle_points[2];
+                            p2 = cycle_points[0];
+                        },
+                        _ => {
+                        }
+                    };
                 }
             }
         });
@@ -189,7 +247,6 @@ fn main() {
         event.resize(|args| {
         });
 
-        scene.event(&event);
         window.draw_2d(&event, |ctx, gfx, device| {
                 clear([0.05, 0.05, 0.05, 1.0], gfx);
 
@@ -202,37 +259,6 @@ fn main() {
                 line(color, line_radius, [poly[2].x, poly[2].y, poly[0].x, poly[0].y], origo_trans, gfx);
 
                 {
-                    // Animate the lines .. so that based on the current cycle index, 
-                    // What we would like to call:
-
-                    // draw_line_part(time, segment_width, Point1, Point2)
-                    // And this would draw a line from .
-                    // x1, y1 -> x2, y2
-                    // In a manner where only part of the line is drawn
-                    // And the starting and ending points are advanced based on the interpolation value
-                    // So .. with an interpolation value of 0.5, we would draw a segment of the line
-                    // at point 
-                    //
-
-                    // Line with width of 10
-                    // pt1 |::::|::::| pt2
-
-                    // How would we calculate the start point, end point for the segmented line width ?
-                    // pt1 |::--|--::| pt2
-                    //        ^___^
-                    //         sw
-
-                    // Would need to calculate angle between two points, A
-                    // Then calculate the normalized center value between pt1, pt2 === nPt
-                    // From interpolation value between 0.0 .. 1.0.
-                    // Then from this center position of the line, extend the line
-                    // in angles +A and -A with segment_width/2.0 amounts.
-
-                    // 
-                    //   |::--C--::|
-                    let mut p1 = Point2::new(poly[2].x, poly[2].y);
-                    let mut p2 = Point2::new(poly[0].x, poly[0].y);
-
                     // So first, do we need the angle ?
                     // We need to know how many units we are going to along from the p1 along p2
                     // For this, we need to know the line delta x and y
@@ -242,11 +268,6 @@ fn main() {
                     // So we know the length of the hypotenuse.
                     // In order to find the beginning point sp1, we need to calculate the sides of a triangle
                     // And add to the original p1
-
-                    // Calculate the inner angle in radians.
-                    //let angle_rad = 2.0*consts::PI - radians_between_points(p1, p2);
-
-                    // Humm if the angle is over 90 degrees .. what do we do ?
                     let angle_rad = radians_between_points(p1, p2);
 
                     let mut xdir = 0.0;
@@ -255,7 +276,7 @@ fn main() {
                     // 0 .. 90.0
                     if angle_rad <= consts::FRAC_PI_2 {
                         xdir = 1.0;
-                        ydir = -1.0;
+                        ydir = 1.0;
                         angle_delta = angle_rad;
                     // 90.0 .. 180.0
                     } else if (angle_rad >= consts::FRAC_PI_2) && (angle_rad <= consts::PI) {
@@ -264,17 +285,17 @@ fn main() {
                         angle_delta = consts::PI - angle_rad;
                     // 180.0 .. 270.0
                     } else if (angle_rad >= consts::PI) && (angle_rad <= 3.0*consts::PI/2.0) {
-                        xdir = 1.0;
+                        xdir = -1.0;
                         ydir = 1.0;
                         angle_delta = 3.0*consts::PI/2.0 - angle_rad;
                     // 180.0 .. 270.0
-                    } else if (angle_rad >= 3.0*consts::PI/2.0) && (angle_rad <= consts::FRAC_2_PI) {
+                    } else if (angle_rad >= 3.0*consts::PI/2.0) && (angle_rad <= 2.0*consts::PI) {
                         xdir = 1.0;
                         ydir = -1.0;
-                        angle_delta = consts::FRAC_2_PI - angle_rad;
+                        angle_delta = 2.0*consts::PI - angle_rad;
                     }
 
-    /*
+/*
                     println!("angle_rad = {} angle_deg = {} angle_delta={} angle_delta_deg = {} xdir = {} ydir={}", 
                             angle_rad, angle_rad.to_degrees(), angle_delta, angle_delta.to_degrees(), xdir, ydir);
                             */
@@ -294,8 +315,6 @@ fn main() {
                     // So if we figure out the slope of the line, we should be able to calculate the rise and run needed to
                     // advance the line. Then we advance interpolation * c amount towards both positive rise and run.
 
-                    // How do we calculate the rise ?
-                    // If we are rising 100 units
                     // And 60 X-units. 
                     // The rise is (60 / 100) on each step of the x axis.
                     // But we would have to directly calculate the step at which we are going to start the line.
@@ -304,29 +323,20 @@ fn main() {
                     let rise = b / c;
                     let run = a / c;
 
-                    let interpolation = 0.50;
+                    let interpolation = number_vis_time / number_cycle_time;
                     let segment_length = c * interpolation;
+
                     let shift_x = segment_length * run * xdir;
-                    let shift_y = segment_length * rise * ydir * -1.0;
+                    let shift_y = segment_length * rise * ydir;
 
                     //println!("rise = {} run = {}", rise, run);
                     //println!("shift_x = {} shift_y = {}", shift_x, shift_y);
 
-                    let sp1 = Point2::new(p1.x + shift_x, p1.y + shift_y);
-                    let sp2 = p2.clone();
-
-                    //println!("sp1 = ({},{})", sp1.x, sp1.y);
-
-                    // Now we have the angle, and the side of the hypotenuse 
-                    // And the direction we need to increment our line to.
-
-                    // What is the starting segment point ?
-                    // This is the amount we must move on the x-axis 
-                    let start_x = p1.x + segment_length * run * xdir;
-                    let start_y = p1.y + segment_length * rise * ydir;
-
+                    // These should be cycled according to the number cycle.
+                    let sp1 = p1.clone();
                     //let sp2 = p2.clone();
-                    
+                    let sp2 = Point2::new(p1.x + shift_x, p1.y + shift_y);
+
                     line(color2, line_radius, [sp1.x, sp1.y, sp2.x, sp2.y], origo_trans, gfx);
                 }
             });
