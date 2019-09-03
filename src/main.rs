@@ -138,11 +138,11 @@ fn main() {
     textures.push(texture);
 
     let origo = Point2::new(win_size[0]/2.0, win_size[1]/2.0);
-    let color:[f32; 4] = [1.0, 1.0, 1.0, 1.0];
-    let color2:[f32; 4] = [1.0, 0.0, 1.0, 1.0];
+    let base_color:[f32; 4] = [1.0, 1.0, 1.0, 1.0];
+    let trace_color:[f32; 4] = [0.2, 0.6, 1.0, 1.0];
     let num_points = 3;
     let angle = 60.0;
-    let radius = 160.0;
+    let radius = 200.0;
 
     let poly = [
         calc_poly_vertex(num_points, angle, radius, 0),
@@ -173,23 +173,19 @@ fn main() {
 
     // The numbers show up exactly at specific times, right ?
     // 0.22, 0.50
-    let number_fade_time = 0.25;
-    let number_show_time = 0.30;
+    let number_fade_time = 0.12;
+    let number_show_time = 0.24;
+    let line_radius = 1.5;
+
+    let mut elapsed_frames = 0;
+    let mut number_vis_time = 0.0;
+    let number_cycle_time = 400.0;
 
     let show_seq = Sequence(vec![
         Action(Ease(EaseFunction::QuadraticIn, Box::new(FadeIn(number_fade_time)))),
         Wait(number_show_time),
         Action(Ease(EaseFunction::QuadraticOut, Box::new(FadeOut(number_fade_time)))),
     ]);
-
-    let line_radius = 1.5;
-
-    let mut elapsed_frames = 0;
-    let mut number_vis_time = 0.0;
-    let number_cycle_time = 900.0;
-
-    let mut cycle_index = 0;
-    let mut active_sprite_id = ids[cycle_index];
 
     let cycle_points = [
         Point2::new(poly[1].x, poly[1].y),
@@ -199,6 +195,9 @@ fn main() {
 
     let mut p1 = cycle_points[0];
     let mut p2 = cycle_points[1];
+
+    let mut cycle_index = 0;
+    let mut active_sprite_id = ids[cycle_index];
 
     scene.run(active_sprite_id, &show_seq);
 
@@ -213,6 +212,8 @@ fn main() {
 
             if number_vis_time > number_cycle_time {
                 if scene.running_for_child(active_sprite_id) < Some(1) {
+                    number_vis_time = 0.0;
+
                     // Cycle to next number.
                     cycle_index = cycle_index + 1;
                     if cycle_index >= ids.len() {
@@ -221,7 +222,6 @@ fn main() {
                     active_sprite_id = ids[cycle_index];
 
                     scene.run(active_sprite_id, &show_seq);
-                    number_vis_time = 0.0;
 
                     // Update points that are used to draw segmented line along.
                     match cycle_index {
@@ -254,9 +254,9 @@ fn main() {
 
                 let origo_trans = ctx.transform.trans(origo.x, origo.y);
 
-                line(color, line_radius, [poly[0].x, poly[0].y, poly[1].x, poly[1].y], origo_trans, gfx);
-                line(color, line_radius, [poly[1].x, poly[1].y, poly[2].x, poly[2].y], origo_trans, gfx);
-                line(color, line_radius, [poly[2].x, poly[2].y, poly[0].x, poly[0].y], origo_trans, gfx);
+                line(base_color, line_radius, [poly[0].x, poly[0].y, poly[1].x, poly[1].y], origo_trans, gfx);
+                line(base_color, line_radius, [poly[1].x, poly[1].y, poly[2].x, poly[2].y], origo_trans, gfx);
+                line(base_color, line_radius, [poly[2].x, poly[2].y, poly[0].x, poly[0].y], origo_trans, gfx);
 
                 {
                     // So first, do we need the angle ?
@@ -295,10 +295,8 @@ fn main() {
                         angle_delta = 2.0*consts::PI - angle_rad;
                     }
 
-/*
-                    println!("angle_rad = {} angle_deg = {} angle_delta={} angle_delta_deg = {} xdir = {} ydir={}", 
-                            angle_rad, angle_rad.to_degrees(), angle_delta, angle_delta.to_degrees(), xdir, ydir);
-                            */
+                    //println!("angle_rad = {} angle_deg = {} angle_delta={} angle_delta_deg = {} xdir = {} ydir={}", 
+                    //        angle_rad, angle_rad.to_degrees(), angle_delta, angle_delta.to_degrees(), xdir, ydir);
 
                     // Allright now we have the inner angle
                     // Now solve the a and b
@@ -323,8 +321,13 @@ fn main() {
                     let rise = b / c;
                     let run = a / c;
 
-                    let interpolation = number_vis_time / number_cycle_time;
+                    let mut interpolation = number_vis_time / number_cycle_time;
+                    if interpolation > 1.0 {
+                        interpolation = 1.0;
+                    }
                     let segment_length = c * interpolation;
+
+//                    println!("interpolation = {} segment_length = {}", interpolation, segment_length);
 
                     let shift_x = segment_length * run * xdir;
                     let shift_y = segment_length * rise * ydir;
@@ -333,11 +336,13 @@ fn main() {
                     //println!("shift_x = {} shift_y = {}", shift_x, shift_y);
 
                     // These should be cycled according to the number cycle.
+                    // 
                     let sp1 = p1.clone();
+                    //let sp1 = Point2::new(p2.x - shift_x, p2.y - shift_y);
                     //let sp2 = p2.clone();
                     let sp2 = Point2::new(p1.x + shift_x, p1.y + shift_y);
 
-                    line(color2, line_radius, [sp1.x, sp1.y, sp2.x, sp2.y], origo_trans, gfx);
+                    line(trace_color, line_radius, [sp1.x, sp1.y, sp2.x, sp2.y], origo_trans, gfx);
                 }
             });
         }
