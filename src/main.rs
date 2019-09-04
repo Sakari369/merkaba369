@@ -2,6 +2,7 @@ extern crate piston;
 extern crate piston_window;
 extern crate sprite;
 extern crate find_folder;
+extern crate interpolation;
 
 use std::f64::{ consts };
 use piston_window::*;
@@ -10,6 +11,7 @@ use cgmath::*;
 use sprite::*;
 use math::Matrix2d;
 use std::rc::Rc;
+use interpolation::{Ease, EaseFunction};
 
 use ai_behavior::{
     Action,
@@ -179,7 +181,8 @@ fn main() {
 
     let mut elapsed_frames = 0;
     let mut number_vis_time = 0.0;
-    let number_cycle_time = 400.0;
+    //let number_cycle_time = 400.0;
+    let number_cycle_time = 800.0;
 
     let show_seq = Sequence(vec![
         Action(Ease(EaseFunction::QuadraticIn, Box::new(FadeIn(number_fade_time)))),
@@ -244,10 +247,12 @@ fn main() {
             }
         });
 
-        event.resize(|args| {
-        });
+/*
+        let foo:f64 = 5.5;
+        foo.calc(EaseFunction::BackIn);
+        */
 
-        window.draw_2d(&event, |ctx, gfx, device| {
+        window.draw_2d(&event, |ctx, gfx, _device| {
                 clear([0.05, 0.05, 0.05, 1.0], gfx);
 
                 scene.draw(ctx.transform, gfx);
@@ -272,27 +277,22 @@ fn main() {
 
                     let mut xdir = 0.0;
                     let mut ydir = 0.0;
-                    let mut angle_delta = 0.0;
                     // 0 .. 90.0
                     if angle_rad <= consts::FRAC_PI_2 {
                         xdir = 1.0;
                         ydir = 1.0;
-                        angle_delta = angle_rad;
                     // 90.0 .. 180.0
                     } else if (angle_rad >= consts::FRAC_PI_2) && (angle_rad <= consts::PI) {
                         xdir = -1.0;
                         ydir = 1.0;
-                        angle_delta = consts::PI - angle_rad;
                     // 180.0 .. 270.0
                     } else if (angle_rad >= consts::PI) && (angle_rad <= 3.0*consts::PI/2.0) {
                         xdir = -1.0;
                         ydir = 1.0;
-                        angle_delta = 3.0*consts::PI/2.0 - angle_rad;
                     // 180.0 .. 270.0
                     } else if (angle_rad >= 3.0*consts::PI/2.0) && (angle_rad <= 2.0*consts::PI) {
                         xdir = 1.0;
                         ydir = -1.0;
-                        angle_delta = 2.0*consts::PI - angle_rad;
                     }
 
                     //println!("angle_rad = {} angle_deg = {} angle_delta={} angle_delta_deg = {} xdir = {} ydir={}", 
@@ -325,22 +325,42 @@ fn main() {
                     if interpolation > 1.0 {
                         interpolation = 1.0;
                     }
-                    let segment_length = c * interpolation;
 
-//                    println!("interpolation = {} segment_length = {}", interpolation, segment_length);
+                    // The distance along hypotenuse 
+                    let c_distance = c * interpolation;
+                    let shift_x = c_distance * run * xdir;
+                    let shift_y = c_distance * rise * ydir;
 
-                    let shift_x = segment_length * run * xdir;
-                    let shift_y = segment_length * rise * ydir;
+//                  println!("interpolation = {} segment_length = {}", interpolation, segment_length);
 
+                    /*
+                    let sp1;
+                    if d1 > (c - segment_length)/2.0 {
+                        sp1 = Point2::new(p1.x + shift_x/2.0, p1.y + shift_y/2.0);
+                    } else {
+                        sp1 = p1.clone();
+                    }
+                    */
+                    //println!("d1 = {}", d1);
                     //println!("rise = {} run = {}", rise, run);
                     //println!("shift_x = {} shift_y = {}", shift_x, shift_y);
 
-                    // These should be cycled according to the number cycle.
-                    // 
-                    let sp1 = p1.clone();
-                    //let sp1 = Point2::new(p2.x - shift_x, p2.y - shift_y);
-                    //let sp2 = p2.clone();
                     let sp2 = Point2::new(p1.x + shift_x, p1.y + shift_y);
+                    let sp1;
+                    //let d1 = (shift_x*shift_x + shift_y*shift_y).sqrt();
+
+                    let segment_part = 0.50;
+                    if interpolation > segment_part {
+                        // Would need to calculate the point at a previous interpolation value.
+                        // The point 1 would have to follow the point 2, but with a difference of segment_length distance.
+                        // So we need to calculate two different shift values, right ?
+                        let c_distance = c * (interpolation - segment_part);
+                        let shift_x = c_distance * run * xdir;
+                        let shift_y = c_distance * rise * ydir;
+                        sp1 = Point2::new(p1.x + shift_x, p1.y + shift_y);
+                    } else {
+                        sp1 = p1.clone();
+                    }
 
                     line(trace_color, line_radius, [sp1.x, sp1.y, sp2.x, sp2.y], origo_trans, gfx);
                 }
