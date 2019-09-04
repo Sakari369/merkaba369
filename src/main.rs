@@ -175,14 +175,14 @@ fn main() {
 
     // The numbers show up exactly at specific times, right ?
     // 0.22, 0.50
-    let number_fade_time = 0.12;
-    let number_show_time = 0.24;
+    let number_fade_time = 0.16;
+    let number_show_time = 0.26;
     let line_radius = 1.5;
 
     let mut elapsed_frames = 0;
     let mut number_vis_time = 0.0;
-    //let number_cycle_time = 400.0;
-    let number_cycle_time = 800.0;
+    let number_cycle_time = 600.0;
+    //let number_cycle_time = 3200.0;
 
     let show_seq = Sequence(vec![
         Action(Ease(EaseFunction::QuadraticIn, Box::new(FadeIn(number_fade_time)))),
@@ -321,46 +321,64 @@ fn main() {
                     let rise = b / c;
                     let run = a / c;
 
-                    let mut interpolation = number_vis_time / number_cycle_time;
+                    let mut interpolation = (number_vis_time / number_cycle_time);
                     if interpolation > 1.0 {
                         interpolation = 1.0;
                     }
 
-                    // The distance along hypotenuse 
-                    let c_distance = c * interpolation;
-                    let shift_x = c_distance * run * xdir;
-                    let shift_y = c_distance * rise * ydir;
-
 //                  println!("interpolation = {} segment_length = {}", interpolation, segment_length);
-
-                    /*
-                    let sp1;
-                    if d1 > (c - segment_length)/2.0 {
-                        sp1 = Point2::new(p1.x + shift_x/2.0, p1.y + shift_y/2.0);
-                    } else {
-                        sp1 = p1.clone();
-                    }
-                    */
                     //println!("d1 = {}", d1);
                     //println!("rise = {} run = {}", rise, run);
                     //println!("shift_x = {} shift_y = {}", shift_x, shift_y);
 
-                    let sp2 = Point2::new(p1.x + shift_x, p1.y + shift_y);
+                    // The distance along hypotenuse 
                     let sp1;
-                    //let d1 = (shift_x*shift_x + shift_y*shift_y).sqrt();
+                    let sp2;
 
+                    // The interpolation value goes from 0 .. 1.0
+                    // If the segment part is 0.25 % of the interpolation
+                    // The line would have to travel distance of -0.25 .. 1.25
+                    // So we need another value that is calculated from the interpolation ?
+                    // Need to adjust the line range from the interpolated value to the range of 
+                    // -0.25 .. 1.25
+                    // max, min, etc.
+                    //new_value = ( (old_value - old_min) / (old_max - old_min) ) * (new_max - new_min) + new_min
                     let segment_part = 0.50;
-                    if interpolation > segment_part {
-                        // Would need to calculate the point at a previous interpolation value.
-                        // The point 1 would have to follow the point 2, but with a difference of segment_length distance.
-                        // So we need to calculate two different shift values, right ?
-                        let c_distance = c * (interpolation - segment_part);
+                    let in_val = interpolation;
+                    let in_min = 0.0;
+                    let in_max = 1.0;
+                    let out_max = 1.0 + segment_part;
+                    let out_min = -segment_part;
+                    let line_interpolation = ((in_val - in_min) / (in_max - in_min)) * (out_max - out_min) + out_min;
+                    line_interpolation.calc(EaseFunction::CubicIn);
+                    //println!("line_interpolation = {}", line_interpolation);
+
+                    // Calculate beginning point
+                    {
+                        let mut c_distance = c * line_interpolation - (c * 0.80/2.0);
+                        if c_distance < 0.0 {
+                            c_distance = 0.0;
+                        }
                         let shift_x = c_distance * run * xdir;
                         let shift_y = c_distance * rise * ydir;
                         sp1 = Point2::new(p1.x + shift_x, p1.y + shift_y);
-                    } else {
-                        sp1 = p1.clone();
                     }
+
+                    {
+                        // How much further should the p2 go ?
+                        let mut c_distance = (c * line_interpolation) + (c * 0.80/2.0);
+                        if c_distance < 0.0 {
+                            c_distance = 0.0;
+                        } else if c_distance > c {
+                            c_distance = c;
+                        }
+                        let shift_x = c_distance * run * xdir;
+                        let shift_y = c_distance * rise * ydir;
+                        sp2 = Point2::new(p1.x + shift_x, p1.y + shift_y);
+                    }
+
+                    // How to limit the points ?
+                    // 
 
                     line(trace_color, line_radius, [sp1.x, sp1.y, sp2.x, sp2.y], origo_trans, gfx);
                 }
