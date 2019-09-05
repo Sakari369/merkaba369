@@ -55,7 +55,7 @@ fn calc_poly_vertex(num_points:u32, angle:f64, radius:f64, vertex_index:u32) -> 
 fn main() {
     let opengl = OpenGL::V3_3;
 
-    let win_size = [1280.0, 720.0];
+    let win_size = [800.0, 800.0];
 
     let mut window: PistonWindow = WindowSettings::new("369", win_size)
         .exit_on_esc(true)
@@ -136,7 +136,7 @@ fn main() {
 
     // The numbers show up exactly at specific times, right ?
     // 0.22, 0.50
-    let number_fade_time = 0.16;
+    let number_fade_time = 0.06;
     let number_show_time = 0.26;
     let line_radius = 1.5;
 
