@@ -6,21 +6,16 @@ extern crate interpolation;
 
 use std::f64::{ consts };
 use piston_window::*;
-use piston::input::{UpdateEvent, RenderEvent};
+use piston::input::{UpdateEvent};
 use cgmath::*;
 use sprite::*;
-use math::Matrix2d;
 use std::rc::Rc;
 use interpolation::{Ease, EaseFunction};
 
 use ai_behavior::{
     Action,
-    State,
     Sequence,
-    Success,
     Wait,
-    WaitForever,
-    While
 };
 
 fn radians_between_points (p1:Point2<f64>, p2:Point2<f64>) -> f64 {
@@ -56,40 +51,6 @@ fn calc_poly_vertex(num_points:u32, angle:f64, radius:f64, vertex_index:u32) -> 
 
 	Point2::new(x, y)
 }
-
-//draw_line_segment(color, line_radius, interpolation, p1, p2, segment_width, origo_trans, gfx);
-/*
-                    // Animate the lines .. so that based on the current cycle index, 
-                    // What we would like to call:
-
-                    // draw_line_part(time, segment_width, Point1, Point2)
-                    // And this would draw a line from .
-                    // x1, y1 -> x2, y2
-                    // In a manner where only part of the line is drawn
-                    // And the starting and ending points are advanced based on the interpolation value
-                    // So .. with an interpolation value of 0.5, we would draw a segment of the line
-                    // at point 
-                    //
-
-                    // Line with width of 10
-                    // pt1 |::::|::::| pt2
-
-                    // How would we calculate the start point, end point for the segmented line width ?
-                    // pt1 |::--|--::| pt2
-                    //        ^___^
-                    //         sw
-
-                    // Would need to calculate angle between two points, A
-                    // Then calculate the normalized center value between pt1, pt2 === nPt
-                    // From interpolation value between 0.0 .. 1.0.
-                    // Then from this center position of the line, extend the line
-                    // in angles +A and -A with segment_width/2.0 amounts.
-
-fn draw_line_segment(color:[f32; 4], width:f64, interpolation:f64, p1:&Point2<f64>, p2:&Point2<f64>,
-                     segment_width:f64, translation:Matrix2d, gfx: &mut Graphics) {
-            line(color, width, [p1.x, p1.y, p2.x, p2.y], translation, gfx);
-}
-*/
 
 fn main() {
     let opengl = OpenGL::V3_3;
@@ -247,11 +208,6 @@ fn main() {
             }
         });
 
-/*
-        let foo:f64 = 5.5;
-        foo.calc(EaseFunction::BackIn);
-        */
-
         window.draw_2d(&event, |ctx, gfx, _device| {
                 clear([0.05, 0.05, 0.05, 1.0], gfx);
 
@@ -295,92 +251,30 @@ fn main() {
                         ydir = -1.0;
                     }
 
-                    //println!("angle_rad = {} angle_deg = {} angle_delta={} angle_delta_deg = {} xdir = {} ydir={}", 
-                    //        angle_rad, angle_rad.to_degrees(), angle_delta, angle_delta.to_degrees(), xdir, ydir);
-
-                    // Allright now we have the inner angle
-                    // Now solve the a and b
-                    // But we would need to know the length of the line ?
-                    // How would we figure out that ?
-                    // ...
-
                     let a = (p2.x - p1.x).abs();
                     let b = (p2.y - p1.y).abs();
-                    let c = (a*a + b*b).sqrt();
+                    let side_len = (a*a + b*b).sqrt();
 
-                    //println!("a = {} b = {} c = {}", a, b, c);
+                    let rise = b / side_len;
+                    let run = a / side_len;
+                    let interpolation = (number_vis_time / number_cycle_time).calc(EaseFunction::ExponentialInOut);
 
-                    // So if we figure out the slope of the line, we should be able to calculate the rise and run needed to
-                    // advance the line. Then we advance interpolation * c amount towards both positive rise and run.
+                    let calc_shifts = |interpolation, side_len, run, rise, xdir, ydir| {
+                        let unit_shift = interpolation * side_len;
+                        let shift_x = unit_shift * run * xdir;
+                        let shift_y = unit_shift * rise * ydir;
 
-                    // And 60 X-units. 
-                    // The rise is (60 / 100) on each step of the x axis.
-                    // But we would have to directly calculate the step at which we are going to start the line.
-                    // So .. we multiple the rise by the (segment_width/2.0), and we get the starting point.
-                    // Ending point is that + segment_width/2.0;
-                    let rise = b / c;
-                    let run = a / c;
+                        (shift_x, shift_y)
+                    };
 
-                    let mut interpolation = (number_vis_time / number_cycle_time);
-                    if interpolation > 1.0 {
-                        interpolation = 1.0;
-                    }
+                    let (sx, sy) = calc_shifts(interpolation, side_len, run, rise, xdir, ydir);
 
-//                  println!("interpolation = {} segment_length = {}", interpolation, segment_length);
-                    //println!("d1 = {}", d1);
-                    //println!("rise = {} run = {}", rise, run);
-                    //println!("shift_x = {} shift_y = {}", shift_x, shift_y);
+                    let x1 = p1.x;
+                    let y1 = p1.y;
+                    let x2 = p1.x + sx;
+                    let y2 = p1.y + sy;
 
-                    // The distance along hypotenuse 
-                    let sp1;
-                    let sp2;
-
-                    // The interpolation value goes from 0 .. 1.0
-                    // If the segment part is 0.25 % of the interpolation
-                    // The line would have to travel distance of -0.25 .. 1.25
-                    // So we need another value that is calculated from the interpolation ?
-                    // Need to adjust the line range from the interpolated value to the range of 
-                    // -0.25 .. 1.25
-                    // max, min, etc.
-                    //new_value = ( (old_value - old_min) / (old_max - old_min) ) * (new_max - new_min) + new_min
-                    let segment_part = 0.50;
-                    let in_val = interpolation;
-                    let in_min = 0.0;
-                    let in_max = 1.0;
-                    let out_max = 1.0 + segment_part;
-                    let out_min = -segment_part;
-                    let line_interpolation = ((in_val - in_min) / (in_max - in_min)) * (out_max - out_min) + out_min;
-                    line_interpolation.calc(EaseFunction::CubicIn);
-                    //println!("line_interpolation = {}", line_interpolation);
-
-                    // Calculate beginning point
-                    {
-                        let mut c_distance = c * line_interpolation - (c * 0.80/2.0);
-                        if c_distance < 0.0 {
-                            c_distance = 0.0;
-                        }
-                        let shift_x = c_distance * run * xdir;
-                        let shift_y = c_distance * rise * ydir;
-                        sp1 = Point2::new(p1.x + shift_x, p1.y + shift_y);
-                    }
-
-                    {
-                        // How much further should the p2 go ?
-                        let mut c_distance = (c * line_interpolation) + (c * 0.80/2.0);
-                        if c_distance < 0.0 {
-                            c_distance = 0.0;
-                        } else if c_distance > c {
-                            c_distance = c;
-                        }
-                        let shift_x = c_distance * run * xdir;
-                        let shift_y = c_distance * rise * ydir;
-                        sp2 = Point2::new(p1.x + shift_x, p1.y + shift_y);
-                    }
-
-                    // How to limit the points ?
-                    // 
-
-                    line(trace_color, line_radius, [sp1.x, sp1.y, sp2.x, sp2.y], origo_trans, gfx);
+                    line(trace_color, line_radius, [x1, y1, x2, y2], origo_trans, gfx);
                 }
             });
         }
