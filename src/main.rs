@@ -142,8 +142,7 @@ fn main() {
 
     let mut elapsed_frames = 0;
     let mut number_vis_time = 0.0;
-    let number_cycle_time = 600.0;
-    //let number_cycle_time = 3200.0;
+    let number_cycle_time = 560.0;
 
     let show_seq = Sequence(vec![
         Action(Ease(EaseFunction::QuadraticIn, Box::new(FadeIn(number_fade_time)))),
@@ -220,17 +219,10 @@ fn main() {
                 line(base_color, line_radius, [poly[2].x, poly[2].y, poly[0].x, poly[0].y], origo_trans, gfx);
 
                 {
-                    // So first, do we need the angle ?
-                    // We need to know how many units we are going to along from the p1 along p2
-                    // For this, we need to know the line delta x and y
-                    // This can be calculated by using the angle difference between p1 and p2
-                    // once we know the delta angle, we can then draw a triangle from p1 -> p2 
-
-                    // So we know the length of the hypotenuse.
-                    // In order to find the beginning point sp1, we need to calculate the sides of a triangle
-                    // And add to the original p1
+                    // Calculate angle between polygon points p1 and p2.
                     let angle_rad = radians_between_points(p1, p2);
 
+                    // From the angle figure out direction of line advancement along x and y -axis.
                     let mut xdir = 0.0;
                     let mut ydir = 0.0;
                     // 0 .. 90.0
@@ -251,12 +243,17 @@ fn main() {
                         ydir = -1.0;
                     }
 
+                    // Calculate length of the triangle side from the point difference
+                    // with the pythagoran theorem.
                     let a = (p2.x - p1.x).abs();
                     let b = (p2.y - p1.y).abs();
                     let side_len = (a*a + b*b).sqrt();
 
+                    // Calculate rise and run ratio for the line angle.
                     let rise = b / side_len;
                     let run = a / side_len;
+
+                    // Current point in along the line we are advancing.
                     let interpolation = (number_vis_time / number_cycle_time).calc(EaseFunction::ExponentialInOut);
 
                     let calc_shifts = |interpolation, side_len, run, rise, xdir, ydir| {
