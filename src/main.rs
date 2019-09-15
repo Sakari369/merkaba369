@@ -103,7 +103,7 @@ fn draw_line_segment(p1: Point2<f64>, p2: Point2<f64>, interpolation: f64,
     line(color, line_radius, [x1, y1, x2, y2], translation, gfx);
 }
 
-fn draw_line_triangle(color:[f32; 4], line_radius:f64, points:&[Point2<f64>; 3], 
+fn draw_line_triangle(points:&[Point2<f64>; 3], color:[f32; 4], line_radius:f64,
                       translation: math::Matrix2d, gfx: &mut impl Graphics) {
     line(color, line_radius, [points[0].x, points[0].y, points[1].x, points[1].y], translation, gfx);
     line(color, line_radius, [points[1].x, points[1].y, points[2].x, points[2].y], translation, gfx);
@@ -267,7 +267,7 @@ fn main() {
                 scene.draw(ctx.transform, gfx);
 
                 let origo_trans = ctx.transform.trans(origo.x, origo.y);
-                draw_line_triangle(base_color, line_radius, &poly369, origo_trans, gfx);
+                draw_line_triangle(&poly369, base_color, line_radius, origo_trans, gfx);
 
                 // Current point in along the line we are advancing.
                 let interpolation = (number_vis_time / number_cycle_time).calc(EaseFunction::ExponentialInOut);
