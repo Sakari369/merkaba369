@@ -64,104 +64,98 @@ fn main() {
         .build()
         .unwrap();
 
-    let assets = find_folder::Search::ParentsThenKids(3, 3)
-        .for_folder("assets").unwrap();
-    println!("{:?}", assets);
-
     let mut scene = Scene::new();
     let mut texture_context = TextureContext {
         factory: window.factory.clone(),
         encoder: window.factory.create_command_buffer().into()
     };
 
+    // Create textures for numbers 369.
+    let assets = find_folder::Search::ParentsThenKids(3, 3).for_folder("assets").unwrap();
     let mut textures = Vec::with_capacity(3);
-
-    let mut texture = Rc::new(Texture::from_path(
-        &mut texture_context,
-        assets.join("3.png"),
-        Flip::None,
-        &TextureSettings::new()
-    ).unwrap());
+    let mut texture = Rc::new(Texture::from_path(&mut texture_context, assets.join("3.png"),
+                              Flip::None, &TextureSettings::new()).unwrap());
     textures.push(texture);
 
-    texture = Rc::new(Texture::from_path(
-        &mut texture_context,
-        assets.join("6.png"),
-        Flip::None,
-        &TextureSettings::new()
-    ).unwrap());
+    texture = Rc::new(Texture::from_path(&mut texture_context, assets.join("6.png"),
+                      Flip::None, &TextureSettings::new()).unwrap());
     textures.push(texture);
 
-    texture = Rc::new(Texture::from_path(
-        &mut texture_context,
-        assets.join("9.png"),
-        Flip::None,
-        &TextureSettings::new()
-    ).unwrap());
+    texture = Rc::new(Texture::from_path(&mut texture_context, assets.join("9.png"),
+                      Flip::None, &TextureSettings::new()).unwrap());
     textures.push(texture);
 
     let origo = Point2::new(win_size[0]/2.0, win_size[1]/2.0);
     let base_color:[f32; 4] = [1.0, 1.0, 1.0, 1.0];
     let trace_color:[f32; 4] = [0.2, 0.6, 1.0, 1.0];
     let num_points = 3;
-    let angle = 60.0;
     let radius = 200.0;
 
-    let poly = [
+    // Vertex points for 369 triangle.
+    let mut angle = 60.0;
+    let poly369 = [
         calc_poly_vertex(num_points, angle, radius, 0),
         calc_poly_vertex(num_points, angle, radius, 1),
         calc_poly_vertex(num_points, angle, radius, 2),
     ];
 
-    let mut ids = Vec::with_capacity(3);
+    // Vertex points for 457 triangle.
+    angle = 0.0;
+    let poly457 = [
+        calc_poly_vertex(num_points, angle, radius, 0),
+        calc_poly_vertex(num_points, angle, radius, 1),
+        calc_poly_vertex(num_points, angle, radius, 2),
+    ];
 
+    // Load number textures.
+    let mut ids = Vec::with_capacity(3);
     let number_scale = 0.20;
     let mut s3 = Sprite::from_texture(textures[0].clone());
-    s3.set_position(origo.x + poly[1].x - 32.0, origo.y + poly[1].y);
+    s3.set_position(origo.x + poly369[1].x - 32.0, origo.y + poly369[1].y);
     s3.set_scale(number_scale, number_scale);
     s3.set_opacity(0.0);
     ids.push(scene.add_child(s3));
 
     let mut s6 = Sprite::from_texture(textures[1].clone());
-    s6.set_position(origo.x + poly[2].x, origo.y + poly[2].y - 38.0);
+    s6.set_position(origo.x + poly369[2].x, origo.y + poly369[2].y - 38.0);
     s6.set_scale(number_scale, number_scale);
     s6.set_opacity(0.0);
     ids.push(scene.add_child(s6));
 
     let mut s9 = Sprite::from_texture(textures[2].clone());
-    s9.set_position(origo.x + poly[0].x + 33.0, origo.y + poly[0].y);
+    s9.set_position(origo.x + poly369[0].x + 33.0, origo.y + poly369[0].y);
     s9.set_scale(number_scale, number_scale);
     s9.set_opacity(0.0);
     ids.push(scene.add_child(s9));
 
-    // The numbers show up exactly at specific times, right ?
-    // 0.22, 0.50
+    // Number show times.
     let number_fade_time = 0.06;
     let number_show_time = 0.26;
-    let line_radius = 1.5;
 
-    let mut elapsed_frames = 0;
-    let mut number_vis_time = 0.0;
-    let number_cycle_time = 560.0;
-
+    // Number show animation sequence.
     let show_seq = Sequence(vec![
         Action(Ease(EaseFunction::QuadraticIn, Box::new(FadeIn(number_fade_time)))),
         Wait(number_show_time),
         Action(Ease(EaseFunction::QuadraticOut, Box::new(FadeOut(number_fade_time)))),
     ]);
 
+    // The points between which cycle lines are being drawn.
     let cycle_points = [
-        Point2::new(poly[1].x, poly[1].y),
-        Point2::new(poly[2].x, poly[2].y),
-        Point2::new(poly[0].x, poly[0].y),
+        Point2::new(poly369[1].x, poly369[1].y),
+        Point2::new(poly369[2].x, poly369[2].y),
+        Point2::new(poly369[0].x, poly369[0].y),
     ];
+
+    let line_radius = 1.5;
+    let mut elapsed_frames = 0;
+    let mut number_vis_time = 0.0;
+    let number_cycle_time = 560.0;
+    let mut number_cycle_index = 0;
 
     let mut p1 = cycle_points[0];
     let mut p2 = cycle_points[1];
 
-    let mut cycle_index = 0;
-    let mut active_sprite_id = ids[cycle_index];
-
+    let mut active_sprite_id = ids[number_cycle_index];
     scene.run(active_sprite_id, &show_seq);
 
     while let Some(event) = window.next() {
@@ -173,21 +167,22 @@ fn main() {
             let dt_ms = args.dt * 1000.0;
             number_vis_time = number_vis_time + dt_ms;
 
+            // Has number been shown on screen enough time ?
             if number_vis_time > number_cycle_time {
                 if scene.running_for_child(active_sprite_id) < Some(1) {
                     number_vis_time = 0.0;
 
                     // Cycle to next number.
-                    cycle_index = cycle_index + 1;
-                    if cycle_index >= ids.len() {
-                        cycle_index = 0;
+                    number_cycle_index = number_cycle_index + 1;
+                    if number_cycle_index >= ids.len() {
+                        number_cycle_index = 0;
                     }
-                    active_sprite_id = ids[cycle_index];
+                    active_sprite_id = ids[number_cycle_index];
 
                     scene.run(active_sprite_id, &show_seq);
 
                     // Update points that are used to draw segmented line along.
-                    match cycle_index {
+                    match number_cycle_index {
                         0 => { 
                             p1 = cycle_points[0];
                             p2 = cycle_points[1];
@@ -208,15 +203,17 @@ fn main() {
         });
 
         window.draw_2d(&event, |ctx, gfx, _device| {
-                clear([0.05, 0.05, 0.05, 1.0], gfx);
+                clear([0.0, 0.0, 0.0, 1.0], gfx);
 
+                // Draw sprites.
                 scene.draw(ctx.transform, gfx);
 
                 let origo_trans = ctx.transform.trans(origo.x, origo.y);
 
-                line(base_color, line_radius, [poly[0].x, poly[0].y, poly[1].x, poly[1].y], origo_trans, gfx);
-                line(base_color, line_radius, [poly[1].x, poly[1].y, poly[2].x, poly[2].y], origo_trans, gfx);
-                line(base_color, line_radius, [poly[2].x, poly[2].y, poly[0].x, poly[0].y], origo_trans, gfx);
+                // Draw the base triangle.
+                line(base_color, line_radius, [poly369[0].x, poly369[0].y, poly369[1].x, poly369[1].y], origo_trans, gfx);
+                line(base_color, line_radius, [poly369[1].x, poly369[1].y, poly369[2].x, poly369[2].y], origo_trans, gfx);
+                line(base_color, line_radius, [poly369[2].x, poly369[2].y, poly369[0].x, poly369[0].y], origo_trans, gfx);
 
                 {
                     // Calculate angle between polygon points p1 and p2.
