@@ -52,6 +52,26 @@ fn calc_poly_vertex(num_points:u32, angle:f64, radius:f64, vertex_index:u32) -> 
 	Point2::new(x, y)
 }
 
+fn draw_line_segment(gfx: &mut impl Graphics) {
+}
+
+/*
+                line(base_color, line_radius, [poly369[0].x, poly369[0].y, poly369[1].x, poly369[1].y], origo_trans, gfx);
+                line(base_color, line_radius, [poly369[1].x, poly369[1].y, poly369[2].x, poly369[2].y], origo_trans, gfx);
+                line(base_color, line_radius, [poly369[2].x, poly369[2].y, poly369[0].x, poly369[0].y], origo_trans, gfx);
+*/
+
+fn draw_line_triangle(color:[f32; 4], 
+                      line_radius:f64, 
+                      points:&[Point2<f64>; 3], 
+                      translation: math::Matrix2d,
+                      gfx: &mut impl Graphics) {
+
+    line(color, line_radius, [points[0].x, points[0].y, points[1].x, points[1].y], translation, gfx);
+    line(color, line_radius, [points[1].x, points[1].y, points[2].x, points[2].y], translation, gfx);
+    line(color, line_radius, [points[2].x, points[2].y, points[0].x, points[0].y], translation, gfx);
+}
+
 fn main() {
     let opengl = OpenGL::V3_3;
 
@@ -108,7 +128,7 @@ fn main() {
     ];
 
     // Load number textures.
-    let mut sprite_ids = Vec::with_capacity(3);
+    let mut sprite_ids = Vec::with_capacity(6);
     let number_scale = 0.20;
 
     let mut s3 = Sprite::from_texture(textures[0].clone());
@@ -210,10 +230,9 @@ fn main() {
 
                 let origo_trans = ctx.transform.trans(origo.x, origo.y);
 
-                // Draw the base triangle.
-                line(base_color, line_radius, [poly369[0].x, poly369[0].y, poly369[1].x, poly369[1].y], origo_trans, gfx);
-                line(base_color, line_radius, [poly369[1].x, poly369[1].y, poly369[2].x, poly369[2].y], origo_trans, gfx);
-                line(base_color, line_radius, [poly369[2].x, poly369[2].y, poly369[0].x, poly369[0].y], origo_trans, gfx);
+                draw_line_triangle(base_color, line_radius, &poly369, origo_trans, gfx);
+
+                //draw_line_segment(p1, p2, gfx);
 
                 // Calculate angle between polygon points p1 and p2.
                 let angle_rad = radians_between_points(p1, p2);
