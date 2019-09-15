@@ -108,32 +108,33 @@ fn main() {
     ];
 
     // Load number textures.
-    let mut ids = Vec::with_capacity(3);
+    let mut sprite_ids = Vec::with_capacity(3);
     let number_scale = 0.20;
+
     let mut s3 = Sprite::from_texture(textures[0].clone());
     s3.set_position(origo.x + poly369[1].x - 32.0, origo.y + poly369[1].y);
     s3.set_scale(number_scale, number_scale);
     s3.set_opacity(0.0);
-    ids.push(scene.add_child(s3));
+    sprite_ids.push(scene.add_child(s3));
 
     let mut s6 = Sprite::from_texture(textures[1].clone());
     s6.set_position(origo.x + poly369[2].x, origo.y + poly369[2].y - 38.0);
     s6.set_scale(number_scale, number_scale);
     s6.set_opacity(0.0);
-    ids.push(scene.add_child(s6));
+    sprite_ids.push(scene.add_child(s6));
 
     let mut s9 = Sprite::from_texture(textures[2].clone());
     s9.set_position(origo.x + poly369[0].x + 33.0, origo.y + poly369[0].y);
     s9.set_scale(number_scale, number_scale);
     s9.set_opacity(0.0);
-    ids.push(scene.add_child(s9));
+    sprite_ids.push(scene.add_child(s9));
 
     // Number show times.
     let number_fade_time = 0.06;
     let number_show_time = 0.26;
 
     // Number show animation sequence.
-    let show_seq = Sequence(vec![
+    let number_show_seq = Sequence(vec![
         Action(Ease(EaseFunction::QuadraticIn, Box::new(FadeIn(number_fade_time)))),
         Wait(number_show_time),
         Action(Ease(EaseFunction::QuadraticOut, Box::new(FadeOut(number_fade_time)))),
@@ -147,7 +148,6 @@ fn main() {
     ];
 
     let line_radius = 1.5;
-    let mut elapsed_frames = 0;
     let mut number_vis_time = 0.0;
     let number_cycle_time = 560.0;
     let mut number_cycle_index = 0;
@@ -155,8 +155,10 @@ fn main() {
     let mut p1 = cycle_points[0];
     let mut p2 = cycle_points[1];
 
-    let mut active_sprite_id = ids[number_cycle_index];
-    scene.run(active_sprite_id, &show_seq);
+    let mut active_sprite_id = sprite_ids[number_cycle_index];
+    scene.run(active_sprite_id, &number_show_seq);
+
+    let mut elapsed_frames = 0;
 
     while let Some(event) = window.next() {
         elapsed_frames = elapsed_frames + 1;
@@ -164,8 +166,8 @@ fn main() {
         event.update(|args| {
             scene.event(&event);
 
-            let dt_ms = args.dt * 1000.0;
-            number_vis_time = number_vis_time + dt_ms;
+            let delta_time_ms = args.dt * 1000.0;
+            number_vis_time = number_vis_time + delta_time_ms;
 
             // Has number been shown on screen enough time ?
             if number_vis_time > number_cycle_time {
@@ -174,12 +176,12 @@ fn main() {
 
                     // Cycle to next number.
                     number_cycle_index = number_cycle_index + 1;
-                    if number_cycle_index >= ids.len() {
+                    if number_cycle_index >= sprite_ids.len() {
                         number_cycle_index = 0;
                     }
-                    active_sprite_id = ids[number_cycle_index];
+                    active_sprite_id = sprite_ids[number_cycle_index];
 
-                    scene.run(active_sprite_id, &show_seq);
+                    scene.run(active_sprite_id, &number_show_seq);
 
                     // Update points that are used to draw segmented line along.
                     match number_cycle_index {
@@ -215,61 +217,60 @@ fn main() {
                 line(base_color, line_radius, [poly369[1].x, poly369[1].y, poly369[2].x, poly369[2].y], origo_trans, gfx);
                 line(base_color, line_radius, [poly369[2].x, poly369[2].y, poly369[0].x, poly369[0].y], origo_trans, gfx);
 
-                {
-                    // Calculate angle between polygon points p1 and p2.
-                    let angle_rad = radians_between_points(p1, p2);
+                // Calculate angle between polygon points p1 and p2.
+                let angle_rad = radians_between_points(p1, p2);
 
-                    // From the angle figure out direction of line advancement along x and y -axis.
-                    let mut xdir = 0.0;
-                    let mut ydir = 0.0;
-                    // 0 .. 90.0
-                    if angle_rad <= consts::FRAC_PI_2 {
-                        xdir = 1.0;
-                        ydir = 1.0;
-                    // 90.0 .. 180.0
-                    } else if (angle_rad >= consts::FRAC_PI_2) && (angle_rad <= consts::PI) {
-                        xdir = -1.0;
-                        ydir = 1.0;
-                    // 180.0 .. 270.0
-                    } else if (angle_rad >= consts::PI) && (angle_rad <= 3.0*consts::PI/2.0) {
-                        xdir = -1.0;
-                        ydir = 1.0;
-                    // 180.0 .. 270.0
-                    } else if (angle_rad >= 3.0*consts::PI/2.0) && (angle_rad <= 2.0*consts::PI) {
-                        xdir = 1.0;
-                        ydir = -1.0;
-                    }
-
-                    // Calculate length of the triangle side from the point difference
-                    // with the pythagoran theorem.
-                    let a = (p2.x - p1.x).abs();
-                    let b = (p2.y - p1.y).abs();
-                    let side_len = (a*a + b*b).sqrt();
-
-                    // Calculate rise and run ratio for the line angle.
-                    let rise = b / side_len;
-                    let run = a / side_len;
-
-                    // Current point in along the line we are advancing.
-                    let interpolation = (number_vis_time / number_cycle_time).calc(EaseFunction::ExponentialInOut);
-
-                    let calc_shifts = |interpolation, side_len, run, rise, xdir, ydir| {
-                        let unit_shift = interpolation * side_len;
-                        let shift_x = unit_shift * run * xdir;
-                        let shift_y = unit_shift * rise * ydir;
-
-                        (shift_x, shift_y)
-                    };
-
-                    let (sx, sy) = calc_shifts(interpolation, side_len, run, rise, xdir, ydir);
-
-                    let x1 = p1.x;
-                    let y1 = p1.y;
-                    let x2 = p1.x + sx;
-                    let y2 = p1.y + sy;
-
-                    line(trace_color, line_radius, [x1, y1, x2, y2], origo_trans, gfx);
+                // From the angle figure out direction of line advancement along x and y -axis.
+                let mut xdir = 0.0;
+                let mut ydir = 0.0;
+                // 0 .. 90.0
+                if angle_rad <= consts::FRAC_PI_2 {
+                    xdir = 1.0;
+                    ydir = 1.0;
+                // 90.0 .. 180.0
+                } else if (angle_rad >= consts::FRAC_PI_2) && (angle_rad <= consts::PI) {
+                    xdir = -1.0;
+                    ydir = 1.0;
+                // 180.0 .. 270.0
+                } else if (angle_rad >= consts::PI) && (angle_rad <= 3.0*consts::PI/2.0) {
+                    xdir = -1.0;
+                    ydir = 1.0;
+                // 180.0 .. 270.0
+                } else if (angle_rad >= 3.0*consts::PI/2.0) && (angle_rad <= 2.0*consts::PI) {
+                    xdir = 1.0;
+                    ydir = -1.0;
                 }
+
+                // Calculate length of the triangle side from the point difference
+                // with the pythagoran theorem.
+                let a = (p2.x - p1.x).abs();
+                let b = (p2.y - p1.y).abs();
+                let side_len = (a*a + b*b).sqrt();
+
+                // Calculate rise and run ratio for the line angle.
+                let rise = b / side_len;
+                let run = a / side_len;
+
+                // Current point in along the line we are advancing.
+                let interpolation = (number_vis_time / number_cycle_time).calc(EaseFunction::ExponentialInOut);
+
+                // Calculate shift in x, y for given interpolation point along a triangle side.
+                let calc_shifts = |interpolation, side_len, run, rise, xdir, ydir| {
+                    let unit_shift = interpolation * side_len;
+                    let shift_x = unit_shift * run * xdir;
+                    let shift_y = unit_shift * rise * ydir;
+
+                    (shift_x, shift_y)
+                };
+
+                let (sx, sy) = calc_shifts(interpolation, side_len, run, rise, xdir, ydir);
+
+                // Draw cycle segment line.
+                let x1 = p1.x;
+                let y1 = p1.y;
+                let x2 = p1.x + sx;
+                let y2 = p1.y + sy;
+                line(trace_color, line_radius, [x1, y1, x2, y2], origo_trans, gfx);
             });
         }
      }
