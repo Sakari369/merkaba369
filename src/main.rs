@@ -166,10 +166,8 @@ fn main() {
         event.update(|args| {
             scene.event(&event);
 
-            let delta_time_ms = args.dt * 1000.0;
-            number_vis_time = number_vis_time + delta_time_ms;
-
             // Has number been shown on screen enough time ?
+            number_vis_time = number_vis_time + (args.dt * 1000.0);
             if number_vis_time > number_cycle_time {
                 if scene.running_for_child(active_sprite_id) < Some(1) {
                     number_vis_time = 0.0;
