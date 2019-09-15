@@ -52,21 +52,59 @@ fn calc_poly_vertex(num_points:u32, angle:f64, radius:f64, vertex_index:u32) -> 
 	Point2::new(x, y)
 }
 
-fn draw_line_segment(gfx: &mut impl Graphics) {
+fn draw_line_segment(p1: Point2<f64>, p2: Point2<f64>, interpolation: f64, 
+                     color: [f32; 4], line_radius: f64, 
+                     translation: math::Matrix2d, gfx: &mut impl Graphics) {
+    // Calculate angle between polygon points p1 and p2.
+    let angle_rad = radians_between_points(p1, p2);
+
+    // From the angle figure out direction of line advancement along x and y -axis.
+    let mut xdir = 0.0;
+    let mut ydir = 0.0;
+    // 0 .. 90.0
+    if angle_rad <= consts::FRAC_PI_2 {
+        xdir = 1.0;
+        ydir = 1.0;
+    // 90.0 .. 180.0
+    } else if (angle_rad >= consts::FRAC_PI_2) && (angle_rad <= consts::PI) {
+        xdir = -1.0;
+        ydir = 1.0;
+    // 180.0 .. 270.0
+    } else if (angle_rad >= consts::PI) && (angle_rad <= 3.0*consts::PI/2.0) {
+        xdir = -1.0;
+        ydir = 1.0;
+    // 180.0 .. 270.0
+    } else if (angle_rad >= 3.0*consts::PI/2.0) && (angle_rad <= 2.0*consts::PI) {
+        xdir = 1.0;
+        ydir = -1.0;
+    }
+
+    // Calculate length of the triangle side from the point difference
+    // with the pythagoran theorem.
+    let a = (p2.x - p1.x).abs();
+    let b = (p2.y - p1.y).abs();
+    let side_len = (a*a + b*b).sqrt();
+
+    // Calculate rise and run ratio for the line angle.
+    let rise = b / side_len;
+    let run = a / side_len;
+
+    // Calculate shift in x, y for given interpolation point along a triangle side.
+    let unit_shift = interpolation * side_len;
+    let shift_x = unit_shift * run * xdir;
+    let shift_y = unit_shift * rise * ydir;
+
+    // Draw cycle segment line.
+    let x1 = p1.x;
+    let y1 = p1.y;
+    let x2 = p1.x + shift_x;
+    let y2 = p1.y + shift_y;
+
+    line(color, line_radius, [x1, y1, x2, y2], translation, gfx);
 }
 
-/*
-                line(base_color, line_radius, [poly369[0].x, poly369[0].y, poly369[1].x, poly369[1].y], origo_trans, gfx);
-                line(base_color, line_radius, [poly369[1].x, poly369[1].y, poly369[2].x, poly369[2].y], origo_trans, gfx);
-                line(base_color, line_radius, [poly369[2].x, poly369[2].y, poly369[0].x, poly369[0].y], origo_trans, gfx);
-*/
-
-fn draw_line_triangle(color:[f32; 4], 
-                      line_radius:f64, 
-                      points:&[Point2<f64>; 3], 
-                      translation: math::Matrix2d,
-                      gfx: &mut impl Graphics) {
-
+fn draw_line_triangle(color:[f32; 4], line_radius:f64, points:&[Point2<f64>; 3], 
+                      translation: math::Matrix2d, gfx: &mut impl Graphics) {
     line(color, line_radius, [points[0].x, points[0].y, points[1].x, points[1].y], translation, gfx);
     line(color, line_radius, [points[1].x, points[1].y, points[2].x, points[2].y], translation, gfx);
     line(color, line_radius, [points[2].x, points[2].y, points[0].x, points[0].y], translation, gfx);
@@ -229,65 +267,11 @@ fn main() {
                 scene.draw(ctx.transform, gfx);
 
                 let origo_trans = ctx.transform.trans(origo.x, origo.y);
-
                 draw_line_triangle(base_color, line_radius, &poly369, origo_trans, gfx);
-
-                //draw_line_segment(p1, p2, gfx);
-
-                // Calculate angle between polygon points p1 and p2.
-                let angle_rad = radians_between_points(p1, p2);
-
-                // From the angle figure out direction of line advancement along x and y -axis.
-                let mut xdir = 0.0;
-                let mut ydir = 0.0;
-                // 0 .. 90.0
-                if angle_rad <= consts::FRAC_PI_2 {
-                    xdir = 1.0;
-                    ydir = 1.0;
-                // 90.0 .. 180.0
-                } else if (angle_rad >= consts::FRAC_PI_2) && (angle_rad <= consts::PI) {
-                    xdir = -1.0;
-                    ydir = 1.0;
-                // 180.0 .. 270.0
-                } else if (angle_rad >= consts::PI) && (angle_rad <= 3.0*consts::PI/2.0) {
-                    xdir = -1.0;
-                    ydir = 1.0;
-                // 180.0 .. 270.0
-                } else if (angle_rad >= 3.0*consts::PI/2.0) && (angle_rad <= 2.0*consts::PI) {
-                    xdir = 1.0;
-                    ydir = -1.0;
-                }
-
-                // Calculate length of the triangle side from the point difference
-                // with the pythagoran theorem.
-                let a = (p2.x - p1.x).abs();
-                let b = (p2.y - p1.y).abs();
-                let side_len = (a*a + b*b).sqrt();
-
-                // Calculate rise and run ratio for the line angle.
-                let rise = b / side_len;
-                let run = a / side_len;
 
                 // Current point in along the line we are advancing.
                 let interpolation = (number_vis_time / number_cycle_time).calc(EaseFunction::ExponentialInOut);
-
-                // Calculate shift in x, y for given interpolation point along a triangle side.
-                let calc_shifts = |interpolation, side_len, run, rise, xdir, ydir| {
-                    let unit_shift = interpolation * side_len;
-                    let shift_x = unit_shift * run * xdir;
-                    let shift_y = unit_shift * rise * ydir;
-
-                    (shift_x, shift_y)
-                };
-
-                let (sx, sy) = calc_shifts(interpolation, side_len, run, rise, xdir, ydir);
-
-                // Draw cycle segment line.
-                let x1 = p1.x;
-                let y1 = p1.y;
-                let x2 = p1.x + sx;
-                let y2 = p1.y + sy;
-                line(trace_color, line_radius, [x1, y1, x2, y2], origo_trans, gfx);
+                draw_line_segment(p1, p2, interpolation, trace_color, line_radius, origo_trans, gfx);
             });
         }
      }
