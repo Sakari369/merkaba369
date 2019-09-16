@@ -102,6 +102,10 @@ fn draw_line_segment(p1: Point2<f64>, p2: Point2<f64>, interpolation: f64,
     // Draw cycle segment line.
     let x1 = p1.x;
     let y1 = p1.y;
+    /*
+    let x2 = p2.x;
+    let y2 = p2.y;
+    */
     let x2 = p1.x + shift_x;
     let y2 = p1.y + shift_y;
 
@@ -243,13 +247,15 @@ fn main() {
 
     // The points between which cycle lines are being drawn.
     let cycle_points = [
+        // Clockwise.
         Point2::new(poly369[1].x, poly369[1].y),
         Point2::new(poly369[2].x, poly369[2].y),
         Point2::new(poly369[0].x, poly369[0].y),
 
+        // Counter clockwise.
         Point2::new(poly457[1].x, poly457[1].y),
-        Point2::new(poly457[2].x, poly457[2].y),
         Point2::new(poly457[0].x, poly457[0].y),
+        Point2::new(poly457[2].x, poly457[2].y),
     ];
 
     let line_radius = 1.5;
@@ -257,12 +263,12 @@ fn main() {
     let number_cycle_time = 560.0;
 
     let mut number_cycle_index;
-    let mut number_cycle_begin;
-    let mut number_cycle_end;
+    let number_cycle_begin;
+    let number_cycle_end;
 
     // 0 = 369
     // 1 = 457
-    let mut triangle_dir = TriangleDirection::Down;
+    let triangle_dir = TriangleDirection::Down;
 
     match triangle_dir {
         TriangleDirection::Up => {
@@ -277,8 +283,8 @@ fn main() {
 
     number_cycle_index = number_cycle_begin;
 
-    let mut p1 = cycle_points[0];
-    let mut p2 = cycle_points[1];
+    let mut p1 = cycle_points[number_cycle_begin];
+    let mut p2 = cycle_points[number_cycle_begin+1];
 
     let mut active_sprite_id = sprite_ids[number_cycle_index];
     scene.run(active_sprite_id, &number_show_seq);
@@ -303,14 +309,6 @@ fn main() {
                         number_cycle_index = number_cycle_begin;
                     }
                     active_sprite_id = sprite_ids[number_cycle_index];
-
-/*
-                    if number_cycle_index > 2 {
-                        triangle_dir = 1;
-                    } else {
-                        triangle_dir = 0;
-                    }
-                    */
 
                     scene.run(active_sprite_id, &number_show_seq);
 
@@ -372,10 +370,8 @@ fn main() {
                 };
 
                 // Current point in along the line we are advancing.
-                /*
                 let interpolation = (number_vis_time / number_cycle_time).calc(EaseFunction::ExponentialInOut);
                 draw_line_segment(p1, p2, interpolation, trace_color, line_radius, origo_trans, gfx);
-                */
             });
         }
      }
