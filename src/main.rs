@@ -72,7 +72,7 @@ fn draw_line_segment(p1: Point2<f64>, p2: Point2<f64>, interpolation: f64,
     // 180.0 .. 270.0
     } else if (angle_rad >= consts::PI) && (angle_rad <= 3.0*consts::PI/2.0) {
         xdir = -1.0;
-        ydir = 1.0;
+        ydir = -1.0;
     // 180.0 .. 270.0
     } else if (angle_rad >= 3.0*consts::PI/2.0) && (angle_rad <= 2.0*consts::PI) {
         xdir = 1.0;
@@ -151,6 +151,10 @@ fn main() {
 
     let win_size = [800.0, 800.0];
 
+    // 0 = 369
+    // 1 = 457
+    let mut triangle_dir = 0;
+
     let mut window: PistonWindow = WindowSettings::new("369", win_size)
         .exit_on_esc(true)
         .graphics_api(opengl)
@@ -184,27 +188,45 @@ fn main() {
         calc_poly_vertex(num_points, angle, radius, 2),
     ];
 
-    // Load number textures.
+    // Create number sprites.
     let mut sprite_ids = Vec::with_capacity(6);
     let number_scale = 0.20;
 
-    let mut s3 = Sprite::from_texture(textures[0].clone());
-    s3.set_position(origo.x + poly369[1].x - 32.0, origo.y + poly369[1].y);
-    s3.set_scale(number_scale, number_scale);
-    s3.set_opacity(0.0);
-    sprite_ids.push(scene.add_child(s3));
+    let mut number = Sprite::from_texture(textures[0].clone());
+    number.set_position(origo.x + poly369[1].x - 32.0, origo.y + poly369[1].y);
+    number.set_scale(number_scale, number_scale);
+    number.set_opacity(0.0);
+    sprite_ids.push(scene.add_child(number));
 
-    let mut s6 = Sprite::from_texture(textures[1].clone());
-    s6.set_position(origo.x + poly369[2].x, origo.y + poly369[2].y - 38.0);
-    s6.set_scale(number_scale, number_scale);
-    s6.set_opacity(0.0);
-    sprite_ids.push(scene.add_child(s6));
+    number = Sprite::from_texture(textures[1].clone());
+    number.set_position(origo.x + poly369[2].x, origo.y + poly369[2].y - 38.0);
+    number.set_scale(number_scale, number_scale);
+    number.set_opacity(0.0);
+    sprite_ids.push(scene.add_child(number));
 
-    let mut s9 = Sprite::from_texture(textures[2].clone());
-    s9.set_position(origo.x + poly369[0].x + 33.0, origo.y + poly369[0].y);
-    s9.set_scale(number_scale, number_scale);
-    s9.set_opacity(0.0);
-    sprite_ids.push(scene.add_child(s9));
+    number = Sprite::from_texture(textures[2].clone());
+    number.set_position(origo.x + poly369[0].x + 33.0, origo.y + poly369[0].y);
+    number.set_scale(number_scale, number_scale);
+    number.set_opacity(0.0);
+    sprite_ids.push(scene.add_child(number));
+
+    number = Sprite::from_texture(textures[3].clone());
+    number.set_position(origo.x + poly457[1].x - 32.0, origo.y + poly457[1].y);
+    number.set_scale(number_scale, number_scale);
+    number.set_opacity(0.0);
+    sprite_ids.push(scene.add_child(number));
+
+    number = Sprite::from_texture(textures[4].clone());
+    number.set_position(origo.x + poly457[2].x, origo.y + poly457[2].y - 38.0);
+    number.set_scale(number_scale, number_scale);
+    number.set_opacity(0.0);
+    sprite_ids.push(scene.add_child(number));
+
+    number = Sprite::from_texture(textures[5].clone());
+    number.set_position(origo.x + poly457[0].x + 33.0, origo.y + poly457[0].y);
+    number.set_scale(number_scale, number_scale);
+    number.set_opacity(0.0);
+    sprite_ids.push(scene.add_child(number));
 
     // Number show times.
     let number_fade_time = 0.06;
@@ -222,6 +244,10 @@ fn main() {
         Point2::new(poly369[1].x, poly369[1].y),
         Point2::new(poly369[2].x, poly369[2].y),
         Point2::new(poly369[0].x, poly369[0].y),
+
+        Point2::new(poly457[1].x, poly457[1].y),
+        Point2::new(poly457[2].x, poly457[2].y),
+        Point2::new(poly457[0].x, poly457[0].y),
     ];
 
     let line_radius = 1.5;
@@ -256,21 +282,46 @@ fn main() {
                     }
                     active_sprite_id = sprite_ids[number_cycle_index];
 
+                    if number_cycle_index > 2 {
+                        triangle_dir = 1;
+                    } else {
+                        triangle_dir = 0;
+                    }
+
                     scene.run(active_sprite_id, &number_show_seq);
 
                     // Update points that are used to draw segmented line along.
                     match number_cycle_index {
+                        // 3 -> 6.
                         0 => { 
                             p1 = cycle_points[0];
                             p2 = cycle_points[1];
                         },
+                        // 6 -> 9.
                         1 => { 
                             p1 = cycle_points[1];
                             p2 = cycle_points[2];
                         },
+                        // 9 -> 3.
                         2 => { 
                             p1 = cycle_points[2];
                             p2 = cycle_points[0];
+                        },
+
+                        // 4 -> 5.
+                        3 => { 
+                            p1 = cycle_points[3];
+                            p2 = cycle_points[4];
+                        },
+                        // 5 -> 7.
+                        4 => { 
+                            p1 = cycle_points[4];
+                            p2 = cycle_points[5];
+                        },
+                        // 7 -> 4.
+                        5 => { 
+                            p1 = cycle_points[5];
+                            p2 = cycle_points[3];
                         },
                         _ => {
                         }
@@ -286,7 +337,12 @@ fn main() {
                 scene.draw(ctx.transform, gfx);
 
                 let origo_trans = ctx.transform.trans(origo.x, origo.y);
-                draw_line_triangle(&poly369, base_color, line_radius, origo_trans, gfx);
+
+                if triangle_dir == 0 {
+                    draw_line_triangle(&poly369, base_color, line_radius, origo_trans, gfx);
+                } else {
+                    draw_line_triangle(&poly457, base_color, line_radius, origo_trans, gfx);
+                }
 
                 // Current point in along the line we are advancing.
                 let interpolation = (number_vis_time / number_cycle_time).calc(EaseFunction::ExponentialInOut);
