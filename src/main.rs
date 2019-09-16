@@ -193,40 +193,39 @@ fn main() {
     let mut sprite_ids = Vec::with_capacity(6);
     let number_scale = 0.20;
 
-    // 369.
+    // 3.
     let mut number = Sprite::from_texture(textures[0].clone());
     number.set_position(origo.x + poly369[1].x - 32.0, origo.y + poly369[1].y);
     number.set_scale(number_scale, number_scale);
     number.set_opacity(0.0);
     sprite_ids.push(scene.add_child(number));
-
+    // 6.
     number = Sprite::from_texture(textures[1].clone());
     number.set_position(origo.x + poly369[2].x, origo.y + poly369[2].y - 38.0);
     number.set_scale(number_scale, number_scale);
     number.set_opacity(0.0);
     sprite_ids.push(scene.add_child(number));
-
+    // 9.
     number = Sprite::from_texture(textures[2].clone());
     number.set_position(origo.x + poly369[0].x + 33.0, origo.y + poly369[0].y);
     number.set_scale(number_scale, number_scale);
     number.set_opacity(0.0);
     sprite_ids.push(scene.add_child(number));
-
-    // 457.
+    // 4.
     number = Sprite::from_texture(textures[3].clone());
-    number.set_position(origo.x + poly457[1].x - 32.0, origo.y + poly457[1].y);
+    number.set_position(origo.x + poly457[1].x - 33.0, origo.y + poly457[1].y);
     number.set_scale(number_scale, number_scale);
     number.set_opacity(0.0);
     sprite_ids.push(scene.add_child(number));
-
+    // 5.
     number = Sprite::from_texture(textures[4].clone());
-    number.set_position(origo.x + poly457[0].x - 2.0, origo.y + poly457[0].y + 38.0);
+    number.set_position(origo.x + poly457[0].x - 2.0, origo.y + poly457[0].y + 44.0);
     number.set_scale(number_scale, number_scale);
     number.set_opacity(0.0);
     sprite_ids.push(scene.add_child(number));
-
+    // 7.
     number = Sprite::from_texture(textures[5].clone());
-    number.set_position(origo.x + poly457[2].x + 33.0, origo.y + poly457[2].y);
+    number.set_position(origo.x + poly457[2].x + 29.0, origo.y + poly457[2].y);
     number.set_scale(number_scale, number_scale);
     number.set_opacity(0.0);
     sprite_ids.push(scene.add_child(number));
