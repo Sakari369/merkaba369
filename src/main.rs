@@ -18,6 +18,11 @@ use ai_behavior::{
     Wait,
 };
 
+enum TriangleDirection {
+    Up,
+    Down
+}
+
 fn radians_between_points (p1:Point2<f64>, p2:Point2<f64>) -> f64 {
 	let dx = p2.x - p1.x;
 	let dy = p2.y - p1.y;
@@ -151,10 +156,6 @@ fn main() {
 
     let win_size = [800.0, 800.0];
 
-    // 0 = 369
-    // 1 = 457
-    let mut triangle_dir = 0;
-
     let mut window: PistonWindow = WindowSettings::new("369", win_size)
         .exit_on_esc(true)
         .graphics_api(opengl)
@@ -192,6 +193,7 @@ fn main() {
     let mut sprite_ids = Vec::with_capacity(6);
     let number_scale = 0.20;
 
+    // 369.
     let mut number = Sprite::from_texture(textures[0].clone());
     number.set_position(origo.x + poly369[1].x - 32.0, origo.y + poly369[1].y);
     number.set_scale(number_scale, number_scale);
@@ -210,6 +212,7 @@ fn main() {
     number.set_opacity(0.0);
     sprite_ids.push(scene.add_child(number));
 
+    // 457.
     number = Sprite::from_texture(textures[3].clone());
     number.set_position(origo.x + poly457[1].x - 32.0, origo.y + poly457[1].y);
     number.set_scale(number_scale, number_scale);
@@ -217,13 +220,13 @@ fn main() {
     sprite_ids.push(scene.add_child(number));
 
     number = Sprite::from_texture(textures[4].clone());
-    number.set_position(origo.x + poly457[2].x, origo.y + poly457[2].y - 38.0);
+    number.set_position(origo.x + poly457[0].x - 2.0, origo.y + poly457[0].y + 38.0);
     number.set_scale(number_scale, number_scale);
     number.set_opacity(0.0);
     sprite_ids.push(scene.add_child(number));
 
     number = Sprite::from_texture(textures[5].clone());
-    number.set_position(origo.x + poly457[0].x + 33.0, origo.y + poly457[0].y);
+    number.set_position(origo.x + poly457[2].x + 33.0, origo.y + poly457[2].y);
     number.set_scale(number_scale, number_scale);
     number.set_opacity(0.0);
     sprite_ids.push(scene.add_child(number));
@@ -253,7 +256,27 @@ fn main() {
     let line_radius = 1.5;
     let mut number_vis_time = 0.0;
     let number_cycle_time = 560.0;
-    let mut number_cycle_index = 0;
+
+    let mut number_cycle_index;
+    let mut number_cycle_begin;
+    let mut number_cycle_end;
+
+    // 0 = 369
+    // 1 = 457
+    let mut triangle_dir = TriangleDirection::Down;
+
+    match triangle_dir {
+        TriangleDirection::Up => {
+            number_cycle_begin = 0;
+            number_cycle_end = 2;
+        },
+        TriangleDirection::Down => {
+            number_cycle_begin = 3;
+            number_cycle_end = 5;
+        }
+    };
+
+    number_cycle_index = number_cycle_begin;
 
     let mut p1 = cycle_points[0];
     let mut p2 = cycle_points[1];
@@ -277,16 +300,18 @@ fn main() {
 
                     // Cycle to next number.
                     number_cycle_index = number_cycle_index + 1;
-                    if number_cycle_index >= sprite_ids.len() {
-                        number_cycle_index = 0;
+                    if number_cycle_index > number_cycle_end {
+                        number_cycle_index = number_cycle_begin;
                     }
                     active_sprite_id = sprite_ids[number_cycle_index];
 
+/*
                     if number_cycle_index > 2 {
                         triangle_dir = 1;
                     } else {
                         triangle_dir = 0;
                     }
+                    */
 
                     scene.run(active_sprite_id, &number_show_seq);
 
@@ -338,15 +363,20 @@ fn main() {
 
                 let origo_trans = ctx.transform.trans(origo.x, origo.y);
 
-                if triangle_dir == 0 {
-                    draw_line_triangle(&poly369, base_color, line_radius, origo_trans, gfx);
-                } else {
-                    draw_line_triangle(&poly457, base_color, line_radius, origo_trans, gfx);
-                }
+                match triangle_dir {
+                    TriangleDirection::Up => {
+                        draw_line_triangle(&poly369, base_color, line_radius, origo_trans, gfx);
+                    },
+                    TriangleDirection::Down => {
+                        draw_line_triangle(&poly457, base_color, line_radius, origo_trans, gfx);
+                    }
+                };
 
                 // Current point in along the line we are advancing.
+                /*
                 let interpolation = (number_vis_time / number_cycle_time).calc(EaseFunction::ExponentialInOut);
                 draw_line_segment(p1, p2, interpolation, trace_color, line_radius, origo_trans, gfx);
+                */
             });
         }
      }
