@@ -110,6 +110,42 @@ fn draw_line_triangle(points:&[Point2<f64>; 3], color:[f32; 4], line_radius:f64,
     line(color, line_radius, [points[2].x, points[2].y, points[0].x, points[0].y], translation, gfx);
 }
 
+fn load_textures(window:&mut PistonWindow, asset_path:&str) -> Vec<Rc<Texture<gfx_device_gl::Resources>>> {
+    let mut texture_context = TextureContext {
+        factory: window.factory.clone(),
+        encoder: window.factory.create_command_buffer().into()
+    };
+
+    let mut textures = Vec::with_capacity(6);
+    let assets = find_folder::Search::ParentsThenKids(3, 3).for_folder(asset_path).unwrap();
+
+    // Load textures for numbers 369.
+    let mut texture = Rc::new(Texture::from_path(&mut texture_context, assets.join("3.png"),
+                              Flip::None, &TextureSettings::new()).unwrap());
+    textures.push(texture);
+
+    texture = Rc::new(Texture::from_path(&mut texture_context, assets.join("6.png"),
+                      Flip::None, &TextureSettings::new()).unwrap());
+    textures.push(texture);
+
+    texture = Rc::new(Texture::from_path(&mut texture_context, assets.join("9.png"),
+                      Flip::None, &TextureSettings::new()).unwrap());
+    textures.push(texture);
+
+    // Load textures for numbers 457.
+    texture = Rc::new(Texture::from_path(&mut texture_context, assets.join("4.png"),
+                      Flip::None, &TextureSettings::new()).unwrap());
+    textures.push(texture);
+    texture = Rc::new(Texture::from_path(&mut texture_context, assets.join("5.png"),
+                      Flip::None, &TextureSettings::new()).unwrap());
+    textures.push(texture);
+    texture = Rc::new(Texture::from_path(&mut texture_context, assets.join("7.png"),
+                      Flip::None, &TextureSettings::new()).unwrap());
+    textures.push(texture);
+
+    textures
+}
+
 fn main() {
     let opengl = OpenGL::V3_3;
 
@@ -123,25 +159,8 @@ fn main() {
         .unwrap();
 
     let mut scene = Scene::new();
-    let mut texture_context = TextureContext {
-        factory: window.factory.clone(),
-        encoder: window.factory.create_command_buffer().into()
-    };
 
-    // Create textures for numbers 369.
-    let assets = find_folder::Search::ParentsThenKids(3, 3).for_folder("assets").unwrap();
-    let mut textures = Vec::with_capacity(3);
-    let mut texture = Rc::new(Texture::from_path(&mut texture_context, assets.join("3.png"),
-                              Flip::None, &TextureSettings::new()).unwrap());
-    textures.push(texture);
-
-    texture = Rc::new(Texture::from_path(&mut texture_context, assets.join("6.png"),
-                      Flip::None, &TextureSettings::new()).unwrap());
-    textures.push(texture);
-
-    texture = Rc::new(Texture::from_path(&mut texture_context, assets.join("9.png"),
-                      Flip::None, &TextureSettings::new()).unwrap());
-    textures.push(texture);
+    let textures = load_textures(&mut window, "assets");
 
     let origo = Point2::new(win_size[0]/2.0, win_size[1]/2.0);
     let base_color:[f32; 4] = [1.0, 1.0, 1.0, 1.0];
