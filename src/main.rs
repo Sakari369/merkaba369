@@ -102,10 +102,6 @@ fn draw_line_segment(p1: Point2<f64>, p2: Point2<f64>, interpolation: f64,
     // Draw cycle segment line.
     let x1 = p1.x;
     let y1 = p1.y;
-    /*
-    let x2 = p2.x;
-    let y2 = p2.y;
-    */
     let x2 = p1.x + shift_x;
     let y2 = p1.y + shift_y;
 
