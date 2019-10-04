@@ -154,7 +154,7 @@ fn load_textures(window:&mut PistonWindow, asset_path:&str) -> Vec<Rc<Texture<gf
 fn main() {
     let opengl = OpenGL::V3_3;
 
-    let win_size = [800.0, 800.0];
+    let win_size = [900.0, 900.0];
 
     let mut window: PistonWindow = WindowSettings::new("369", win_size)
         .exit_on_esc(true)
@@ -168,10 +168,8 @@ fn main() {
     let textures = load_textures(&mut window, "assets");
 
     let origo = Point2::new(win_size[0]/2.0, win_size[1]/2.0);
-    let base_color:[f32; 4] = [1.0, 1.0, 1.0, 1.0];
-    let trace_color:[f32; 4] = [0.2, 0.6, 1.0, 1.0];
     let num_points = 3;
-    let radius = 200.0;
+    let radius = 260.0;
 
     // Vertex points for 369 triangle.
     let mut angle = 60.0;
@@ -219,13 +217,13 @@ fn main() {
     sprite_ids.push(scene.add_child(number));
     // 5.
     number = Sprite::from_texture(textures[4].clone());
-    number.set_position(origo.x + poly457[0].x - 2.0, origo.y + poly457[0].y + 44.0);
+    number.set_position(origo.x + poly457[2].x + 29.0, origo.y + poly457[2].y);
     number.set_scale(number_scale, number_scale);
     number.set_opacity(0.0);
     sprite_ids.push(scene.add_child(number));
     // 7.
     number = Sprite::from_texture(textures[5].clone());
-    number.set_position(origo.x + poly457[2].x + 29.0, origo.y + poly457[2].y);
+    number.set_position(origo.x + poly457[0].x - 2.0, origo.y + poly457[0].y + 44.0);
     number.set_scale(number_scale, number_scale);
     number.set_opacity(0.0);
     sprite_ids.push(scene.add_child(number));
@@ -242,19 +240,21 @@ fn main() {
     ]);
 
     // The points between which cycle lines are being drawn.
+    // Clockwise rotation.
     let cycle_points = [
-        // Clockwise.
         Point2::new(poly369[1].x, poly369[1].y),
         Point2::new(poly369[2].x, poly369[2].y),
         Point2::new(poly369[0].x, poly369[0].y),
 
-        // Counter clockwise.
         Point2::new(poly457[1].x, poly457[1].y),
-        Point2::new(poly457[0].x, poly457[0].y),
         Point2::new(poly457[2].x, poly457[2].y),
+        Point2::new(poly457[0].x, poly457[0].y),
     ];
 
-    let line_radius = 1.5;
+    let base_color:[f32; 4] = [1.0, 1.0, 1.0, 1.0];
+    let trace_color:[f32; 4] = [0.2, 0.6, 1.0, 1.0];
+    let line_radius = 2.0;
+
     let mut number_vis_time = 0.0;
     let number_cycle_time = 560.0;
 
@@ -262,8 +262,8 @@ fn main() {
     let number_cycle_begin;
     let number_cycle_end;
 
-    // 0 = 369
-    // 1 = 457
+    // Up = 369.
+    // Down = 457.
     let triangle_dir = TriangleDirection::Down;
 
     match triangle_dir {
