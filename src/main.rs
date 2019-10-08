@@ -257,7 +257,7 @@ fn main() {
         Point2::new(poly457[0].x, poly457[0].y),
     ];
 
-    let base_color:[f32; 4] = [1.0, 1.0, 1.0, 1.0];
+    let mut triangle_color:[f32; 4] = [1.0, 1.0, 1.0, 1.0];
     let trace_color:[f32; 4] = [0.2, 0.6, 1.0, 1.0];
     let line_radius = 2.0;
 
@@ -267,7 +267,7 @@ fn main() {
 
     // For cycling the up and down triangles.
     let mut triangle_vis_time = 0.0;
-    let triangle_cycle_time = 850.0;
+    let triangle_cycle_time = 820.0;
 
     let mut number_cycle_index;
     let number_cycle_begin;
@@ -275,6 +275,7 @@ fn main() {
 
     let draw_mode = DrawMode::UpDownCycle;
     let mut triangle_dir;
+    let mut triangle_opacity = 1.0;
 
     // Up = 369.
     // Down = 457.
@@ -386,6 +387,7 @@ fn main() {
                     triangle_vis_time = triangle_vis_time + (args.dt * 1000.0);
                     if triangle_vis_time > triangle_cycle_time {
                         triangle_vis_time = 0.0;
+                        triangle_opacity = 0.0;
 
                         match triangle_dir {
                             TriangleDirection::Down => {
@@ -407,13 +409,14 @@ fn main() {
                 scene.draw(ctx.transform, gfx);
 
                 let origo_trans = ctx.transform.trans(origo.x, origo.y);
+                triangle_color = [1.0, 1.0, 1.0, triangle_opacity];
 
                 match triangle_dir {
                     TriangleDirection::Up => {
-                        draw_line_triangle(&poly369, base_color, line_radius, origo_trans, gfx);
+                        draw_line_triangle(&poly369, triangle_color, line_radius, origo_trans, gfx);
                     },
                     TriangleDirection::Down => {
-                        draw_line_triangle(&poly457, base_color, line_radius, origo_trans, gfx);
+                        draw_line_triangle(&poly457, triangle_color, line_radius, origo_trans, gfx);
                     }
                 };
 
@@ -424,6 +427,8 @@ fn main() {
                         draw_line_segment(p1, p2, interpolation, trace_color, line_radius, origo_trans, gfx);
                     },
                     DrawMode::UpDownCycle => {
+                        triangle_opacity = ((triangle_vis_time) as f32 / (triangle_cycle_time/3.0) as f32)
+                            .calc(EaseFunction::ExponentialIn);
                     }
                 }
             });
