@@ -23,6 +23,12 @@ enum TriangleDirection {
     Down
 }
 
+enum DrawMode {
+    Segment369,
+    Segment457,
+    UpDownCycle
+}
+
 fn radians_between_points (p1:Point2<f64>, p2:Point2<f64>) -> f64 {
 	let dx = p2.x - p1.x;
 	let dy = p2.y - p1.y;
@@ -255,16 +261,34 @@ fn main() {
     let trace_color:[f32; 4] = [0.2, 0.6, 1.0, 1.0];
     let line_radius = 2.0;
 
+    // For cycling numberes in segment draw mode.
     let mut number_vis_time = 0.0;
     let number_cycle_time = 560.0;
+
+    // For cycling the up and down triangles.
+    let mut triangle_vis_time = 0.0;
+    let triangle_cycle_time = 850.0;
 
     let mut number_cycle_index;
     let number_cycle_begin;
     let number_cycle_end;
 
+    let draw_mode = DrawMode::UpDownCycle;
+    let mut triangle_dir;
+
     // Up = 369.
     // Down = 457.
-    let triangle_dir = TriangleDirection::Down;
+    match draw_mode {
+        DrawMode::Segment369 => {
+            triangle_dir = TriangleDirection::Up;
+        },
+        DrawMode::Segment457 => {
+            triangle_dir = TriangleDirection::Down;
+        }
+        DrawMode::UpDownCycle => {
+            triangle_dir = TriangleDirection::Up;
+        }
+    }
 
     match triangle_dir {
         TriangleDirection::Up => {
@@ -281,9 +305,16 @@ fn main() {
 
     let mut p1 = cycle_points[number_cycle_begin];
     let mut p2 = cycle_points[number_cycle_begin+1];
-
     let mut active_sprite_id = sprite_ids[number_cycle_index];
-    scene.run(active_sprite_id, &number_show_seq);
+
+    // Init scene.
+    match draw_mode {
+        DrawMode::Segment369 | DrawMode::Segment457 => {
+            scene.run(active_sprite_id, &number_show_seq);
+        },
+        DrawMode::UpDownCycle => {
+        }
+    }
 
     let mut elapsed_frames = 0;
 
@@ -293,57 +324,78 @@ fn main() {
         event.update(|args| {
             scene.event(&event);
 
-            // Has number been shown on screen enough time ?
-            number_vis_time = number_vis_time + (args.dt * 1000.0);
-            if number_vis_time > number_cycle_time {
-                if scene.running_for_child(active_sprite_id) < Some(1) {
-                    number_vis_time = 0.0;
+            // Run logic based on draw mode.
+            match draw_mode {
+                DrawMode::Segment369 | DrawMode::Segment457 => {
+                    // Has number been shown on screen enough time ?
+                    number_vis_time = number_vis_time + (args.dt * 1000.0);
+                    if number_vis_time > number_cycle_time {
+                        if scene.running_for_child(active_sprite_id) < Some(1) {
+                            number_vis_time = 0.0;
 
-                    // Cycle to next number.
-                    number_cycle_index = number_cycle_index + 1;
-                    if number_cycle_index > number_cycle_end {
-                        number_cycle_index = number_cycle_begin;
-                    }
-                    active_sprite_id = sprite_ids[number_cycle_index];
+                            // Cycle to next number.
+                            number_cycle_index = number_cycle_index + 1;
+                            if number_cycle_index > number_cycle_end {
+                                number_cycle_index = number_cycle_begin;
+                            }
+                            active_sprite_id = sprite_ids[number_cycle_index];
 
-                    scene.run(active_sprite_id, &number_show_seq);
+                            scene.run(active_sprite_id, &number_show_seq);
 
-                    // Update points that are used to draw segmented line along.
-                    match number_cycle_index {
-                        // 3 -> 6.
-                        0 => { 
-                            p1 = cycle_points[0];
-                            p2 = cycle_points[1];
-                        },
-                        // 6 -> 9.
-                        1 => { 
-                            p1 = cycle_points[1];
-                            p2 = cycle_points[2];
-                        },
-                        // 9 -> 3.
-                        2 => { 
-                            p1 = cycle_points[2];
-                            p2 = cycle_points[0];
-                        },
+                            // Update points that are used to draw segmented line along.
+                            match number_cycle_index {
+                                // 3 -> 6.
+                                0 => { 
+                                    p1 = cycle_points[0];
+                                    p2 = cycle_points[1];
+                                },
+                                // 6 -> 9.
+                                1 => { 
+                                    p1 = cycle_points[1];
+                                    p2 = cycle_points[2];
+                                },
+                                // 9 -> 3.
+                                2 => { 
+                                    p1 = cycle_points[2];
+                                    p2 = cycle_points[0];
+                                },
 
-                        // 4 -> 5.
-                        3 => { 
-                            p1 = cycle_points[3];
-                            p2 = cycle_points[4];
-                        },
-                        // 5 -> 7.
-                        4 => { 
-                            p1 = cycle_points[4];
-                            p2 = cycle_points[5];
-                        },
-                        // 7 -> 4.
-                        5 => { 
-                            p1 = cycle_points[5];
-                            p2 = cycle_points[3];
-                        },
-                        _ => {
+                                // 4 -> 5.
+                                3 => { 
+                                    p1 = cycle_points[3];
+                                    p2 = cycle_points[4];
+                                },
+                                // 5 -> 7.
+                                4 => { 
+                                    p1 = cycle_points[4];
+                                    p2 = cycle_points[5];
+                                },
+                                // 7 -> 4.
+                                5 => { 
+                                    p1 = cycle_points[5];
+                                    p2 = cycle_points[3];
+                                },
+                                _ => {
+                                }
+                            };
                         }
-                    };
+                    }
+                },
+
+                DrawMode::UpDownCycle => {
+                    triangle_vis_time = triangle_vis_time + (args.dt * 1000.0);
+                    if triangle_vis_time > triangle_cycle_time {
+                        triangle_vis_time = 0.0;
+
+                        match triangle_dir {
+                            TriangleDirection::Down => {
+                                triangle_dir = TriangleDirection::Up;
+                            },
+                            TriangleDirection::Up => {
+                                triangle_dir = TriangleDirection::Down;
+                            },
+                        }
+                    }
                 }
             }
         });
@@ -366,8 +418,14 @@ fn main() {
                 };
 
                 // Current point in along the line we are advancing.
-                let interpolation = (number_vis_time / number_cycle_time).calc(EaseFunction::ExponentialInOut);
-                draw_line_segment(p1, p2, interpolation, trace_color, line_radius, origo_trans, gfx);
+                match draw_mode {
+                    DrawMode::Segment369 | DrawMode::Segment457 => {
+                        let interpolation = (number_vis_time / number_cycle_time).calc(EaseFunction::ExponentialInOut);
+                        draw_line_segment(p1, p2, interpolation, trace_color, line_radius, origo_trans, gfx);
+                    },
+                    DrawMode::UpDownCycle => {
+                    }
+                }
             });
         }
      }
