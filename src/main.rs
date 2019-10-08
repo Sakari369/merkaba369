@@ -275,7 +275,7 @@ fn main() {
 
     let draw_mode = DrawMode::UpDownCycle;
     let mut triangle_dir;
-    let mut triangle_opacity = 1.0;
+    let mut triangle_opacity:f32 = 0.0;
 
     // Up = 369.
     // Down = 457.
@@ -409,7 +409,7 @@ fn main() {
                 scene.draw(ctx.transform, gfx);
 
                 let origo_trans = ctx.transform.trans(origo.x, origo.y);
-                triangle_color = [1.0, 1.0, 1.0, triangle_opacity];
+                triangle_color[3] = triangle_opacity;
 
                 match triangle_dir {
                     TriangleDirection::Up => {
