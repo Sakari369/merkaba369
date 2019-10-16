@@ -20,12 +20,14 @@ use ai_behavior::{
 
 enum TriangleDirection {
     Up,
-    Down
+    Down,
+    Both
 }
 
 enum DrawMode {
     Segment369,
     Segment457,
+    StarOfDavid,
     UpDownCycle
 }
 
@@ -160,7 +162,7 @@ fn load_textures(window:&mut PistonWindow, asset_path:&str) -> Vec<Rc<Texture<gf
 fn main() {
     let opengl = OpenGL::V3_3;
 
-    let win_size = [900.0, 900.0];
+    let win_size = [800.0, 800.0];
 
     let mut window: PistonWindow = WindowSettings::new("369", win_size)
         .exit_on_esc(true)
@@ -273,7 +275,7 @@ fn main() {
     let number_cycle_begin;
     let number_cycle_end;
 
-    let draw_mode = DrawMode::UpDownCycle;
+    let draw_mode = DrawMode::StarOfDavid;
     let mut triangle_dir;
     let mut triangle_opacity:f32 = 0.0;
 
@@ -288,11 +290,15 @@ fn main() {
         }
         DrawMode::UpDownCycle => {
             triangle_dir = TriangleDirection::Up;
+        },
+        DrawMode::StarOfDavid => {
+            triangle_dir = TriangleDirection::Both;
+            triangle_opacity = 1.0;
         }
     }
 
     match triangle_dir {
-        TriangleDirection::Up => {
+        TriangleDirection::Up | TriangleDirection::Both => {
             number_cycle_begin = 0;
             number_cycle_end = 2;
         },
@@ -313,7 +319,7 @@ fn main() {
         DrawMode::Segment369 | DrawMode::Segment457 => {
             scene.run(active_sprite_id, &number_show_seq);
         },
-        DrawMode::UpDownCycle => {
+        DrawMode::UpDownCycle | DrawMode::StarOfDavid => {
         }
     }
 
@@ -396,8 +402,14 @@ fn main() {
                             TriangleDirection::Up => {
                                 triangle_dir = TriangleDirection::Down;
                             },
+                            TriangleDirection::Both => {
+                            }
                         }
                     }
+                },
+
+                // No logic.
+                DrawMode::StarOfDavid => {
                 }
             }
         });
@@ -417,6 +429,10 @@ fn main() {
                     },
                     TriangleDirection::Down => {
                         draw_line_triangle(&poly457, triangle_color, line_radius, origo_trans, gfx);
+                    },
+                    TriangleDirection::Both => {
+                        draw_line_triangle(&poly369, triangle_color, line_radius, origo_trans, gfx);
+                        draw_line_triangle(&poly457, triangle_color, line_radius, origo_trans, gfx);
                     }
                 };
 
@@ -429,6 +445,8 @@ fn main() {
                     DrawMode::UpDownCycle => {
                         triangle_opacity = ((triangle_vis_time) as f32 / (triangle_cycle_time/3.0) as f32)
                             .calc(EaseFunction::ExponentialIn);
+                    },
+                    DrawMode::StarOfDavid => {
                     }
                 }
             });
