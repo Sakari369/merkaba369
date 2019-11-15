@@ -275,7 +275,7 @@ fn main() {
     let number_cycle_begin;
     let number_cycle_end;
 
-    let draw_mode = DrawMode::StarOfDavid;
+    let draw_mode = DrawMode::Segment369;
     let mut triangle_dir;
     let mut triangle_opacity:f32 = 0.0;
 
