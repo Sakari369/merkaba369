@@ -6,11 +6,11 @@ extern crate interpolation;
 
 use std::f64::{ consts };
 use piston_window::*;
-use piston::input::{UpdateEvent};
 use cgmath::*;
 use sprite::*;
 use std::rc::Rc;
 use interpolation::{Ease, EaseFunction};
+use crate::piston_window::UpdateEvent;
 
 use ai_behavior::{
     Action,
@@ -22,13 +22,6 @@ enum TriangleDirection {
     Up,
     Down,
     Both
-}
-
-enum DrawMode {
-    Segment369,
-    Segment457,
-    StarOfDavid,
-    UpDownCycle
 }
 
 fn radians_between_points (p1:Point2<f64>, p2:Point2<f64>) -> f64 {
@@ -159,6 +152,14 @@ fn load_textures(window:&mut PistonWindow, asset_path:&str) -> Vec<Rc<Texture<gf
     textures
 }
 
+// What mode are we currently drawing ?
+enum DrawMode {
+    Segment369, // 3, 6, 9 connected by segmented lines.
+    Segment457, // 4, 5, 7 connected by segmented lines.
+    StarOfDavid, // 
+    UpDownCycle // Upwards and downwards triangle alternating.
+}
+
 fn main() {
     let opengl = OpenGL::V3_3;
 
@@ -275,7 +276,7 @@ fn main() {
     let number_cycle_begin;
     let number_cycle_end;
 
-    let draw_mode = DrawMode::Segment369;
+    let draw_mode = DrawMode::Segment457;
     let mut triangle_dir;
     let mut triangle_opacity:f32 = 0.0;
 
