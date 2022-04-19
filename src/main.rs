@@ -67,20 +67,21 @@ fn draw_line_segment(p1: Point2<f64>, p2: Point2<f64>, interpolation: f64,
     // From the angle figure out direction of line advancement along x and y -axis.
     let mut xdir = 0.0;
     let mut ydir = 0.0;
-    // 0 .. 90.0
+
     if angle_rad <= consts::FRAC_PI_2 {
+        // 0 .. 90.0
         xdir = 1.0;
         ydir = 1.0;
-    // 90.0 .. 180.0
     } else if (angle_rad >= consts::FRAC_PI_2) && (angle_rad <= consts::PI) {
+        // 90.0 .. 180.0
         xdir = -1.0;
         ydir = 1.0;
-    // 180.0 .. 270.0
     } else if (angle_rad >= consts::PI) && (angle_rad <= 3.0*consts::PI/2.0) {
+        // 180.0 .. 270.0
         xdir = -1.0;
         ydir = -1.0;
-    // 180.0 .. 270.0
     } else if (angle_rad >= 3.0*consts::PI/2.0) && (angle_rad <= 2.0*consts::PI) {
+        // 180.0 .. 270.0
         xdir = 1.0;
         ydir = -1.0;
     }
@@ -163,7 +164,7 @@ enum DrawMode {
 fn main() {
     let opengl = OpenGL::V3_3;
 
-    let win_size = [800.0, 800.0];
+    let win_size = [1080.0, 1080.0];
 
     let mut window: PistonWindow = WindowSettings::new("369", win_size)
         .exit_on_esc(true)
@@ -276,7 +277,7 @@ fn main() {
     let number_cycle_begin;
     let number_cycle_end;
 
-    let draw_mode = DrawMode::Segment457;
+    let draw_mode = DrawMode::Segment369;
     let mut triangle_dir;
     let mut triangle_opacity:f32 = 0.0;
 
